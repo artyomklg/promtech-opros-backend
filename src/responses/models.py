@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from ..database import Base
+from ..forms import models as form_m
 
 
 class Response(Base):
@@ -17,3 +18,4 @@ class Response(Base):
 
 class Answer(Base):
     id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
+    item_id: int = sa.Column(sa.Integer, sa.ForeignKey('item.id'))

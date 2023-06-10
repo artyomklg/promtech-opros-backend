@@ -1,5 +1,6 @@
 import enum
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -44,7 +45,12 @@ class OptionCreate(OptionBase):
 
 
 class OptionUpdate(OptionBase):
-    ...
+    id: int | None
+    title: str
+    item_id: int | None
+
+    class Config():
+        orm_mode = True
 
 
 class Option(OptionBase):
@@ -75,7 +81,16 @@ class ItemCreate(ItemBase):
 
 
 class ItemUpdate(ItemBase):
-    ...
+    id: int | None
+    title: str
+    item_type: ItemType
+    item_order: int
+    required: bool
+    form_id: int | None
+    options: list[OptionUpdate] = []
+
+    class Config():
+        orm_mode = True
 
 
 class Item(ItemBase):
@@ -97,6 +112,8 @@ class FormBase(BaseModel):
     is_template: bool = False
     organiztion: Organization | None = Organization.OKB
     color: Color | None = Color.Orange
+    created_at: datetime | None
+    link: str | None
     creator_id: uuid.UUID | None = Field(default='a8abc8e7-c90c-48a4-bb58-bfd5e291ed66')
 
 
@@ -104,10 +121,23 @@ class FormCreate(FormBase):
     title: str
     organiztion: Organization
     color: Color
+    link: str
 
 
 class FormUpdate(FormBase):
-    ...
+    id: int | None
+    title: str
+    description: str
+    is_template: bool
+    organization: Organization
+    color: Color
+    creator_id: uuid.UUID
+    created_at: datetime
+    link: str
+    items: list[ItemUpdate] = []
+
+    class Config:
+        orm_mode = True
 
 
 class Form(FormBase):
@@ -115,22 +145,26 @@ class Form(FormBase):
     title: str
     description: str
     is_template: bool
-    organiztion: Organization
+    organization: Organization
     color: Color
     creator_id: uuid.UUID
+    created_at: datetime
+    link: str
     items: list[Item] = []
 
     class Config:
         orm_mode = True
 
 
-class FormWithoutItems(BaseModel):
+class FormWithoutItems(FormBase):
     id: int
     title: str
     description: str
     is_template: bool
     organiztion: Organization
     color: Color
+    link: str
+    created_at: datetime
     creator_id: uuid.UUID
 
     class Config:

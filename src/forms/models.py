@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
@@ -38,8 +39,10 @@ class Form(Base):
     title = sa.Column(sa.String)
     description: str = sa.Column(sa.String)
     is_template: bool = sa.Column(sa.Boolean)
-    organiztion: str = sa.Column(sa.String)
+    organization: str = sa.Column(sa.String)
     color: str = sa.Column(sa.String)
+    created_at: datetime = sa.Column(sa.DateTime(timezone=True), default=datetime.utcnow)
+    link: str = sa.Column(sa.String)
     creator_id: uuid.UUID = sa.Column(
         UUID(as_uuid=True), sa.ForeignKey('user.id'))
 
