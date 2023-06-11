@@ -3,7 +3,7 @@ from fastapi import APIRouter
 # , reset_password_roter, verify_router, oauth_router
 from .auth import auth_router, user_router
 from .forms import forms_router
-from .responses import resp_router
+from .reviews import reviews_router
 
 
 main_router: APIRouter = APIRouter(prefix='/api')

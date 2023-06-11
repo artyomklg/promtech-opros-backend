@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # auth
     SECRET: str
     ALGORITM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 20
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
     GOOGLE_OAUTH_CLIENT_ID: str
     GOOGLE_OAUTH_CLIENT_SECRET: str
 

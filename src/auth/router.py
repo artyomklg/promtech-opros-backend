@@ -9,6 +9,7 @@ from .service import AuthService, UserService
 from .dependencies import get_current_user, get_current_superuser
 from .exceptions import InvalidCredentialsException
 from ..database import get_async_session
+from ..config import settings
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -37,7 +38,7 @@ async def login(
     response.set_cookie(
         'access_token',
         token.access_token,
-        max_age=3600,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         secure=True,
         httponly=True,
         samesite='lax',
@@ -45,7 +46,7 @@ async def login(
     response.set_cookie(
         'refresh_token',
         token.refresh_token,
-        max_age=60 * 60 * 24 * 30,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 30 * 24 * 60,
         secure=True,
         httponly=True,
         samesite='lax',

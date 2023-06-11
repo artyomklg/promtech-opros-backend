@@ -13,20 +13,16 @@ from .models import User as UserModel, RefreshSession
 from .exceptions import InvalidTokenException, TokenExpiredException
 from ..config import settings
 
-SECRET_KEY = settings.SECRET
-ALGORITHM = settings.ALGORITM
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
     async def create_token(self, user: User, session: AsyncSession) -> Token:
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = self._create_access_token(
             str(user.id), access_token_expires)
-        refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         refresh_token = self._create_refresh_token()
         refresh_session = RefreshSession(user_id=user.id,
                                          refresh_token=refresh_token,
@@ -67,7 +63,7 @@ class AuthService:
 
     def _create_access_token(self, user_id: str, expires_delta: timedelta) -> str:
         to_encode = {"sub": user_id, "exp": datetime.utcnow() + expires_delta}
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET, algorithm=settings.ALGORITM)
         return f'Bearer {encoded_jwt}'
 
     def _create_refresh_token(self) -> str:
