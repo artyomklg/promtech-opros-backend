@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import get_async_session, AsyncSession
 from ..auth.models import User
-from ..auth.base_config import current_active_user
+from ..auth.dependencies import get_current_superuser
 from . import models as m
 from . import schemas as sch
 from . import service
@@ -14,7 +14,7 @@ forms_router: APIRouter = APIRouter(prefix='/forms', tags=["forms"])
 async def create_form(
     id: int | None = None,
     session: AsyncSession = Depends(get_async_session),
-    user: User = Depends(current_active_user),
+    user: User = Depends(get_current_superuser),
 ) -> sch.Form:
     if id:
         form_db = await service.get_form(session, id)
@@ -28,7 +28,7 @@ async def create_form(
 
 @forms_router.get('/', response_model=list[sch.FormWithoutItems])
 async def get_templates(
-        user: User = Depends(current_active_user),
+        user: User = Depends(get_current_superuser),
         session: AsyncSession = Depends(get_async_session)
 ) -> list[sch.FormWithoutItems]:
     templates = await service.get_list_templates(session)
@@ -38,7 +38,7 @@ async def get_templates(
 @forms_router.get('/{id}', response_model=sch.Form)
 async def get_form(
     id: int,
-    user: User = Depends(current_active_user),
+    user: User = Depends(get_current_superuser),
     session: AsyncSession = Depends(get_async_session)
 ) -> sch.Form:
     res = await service.get_form(session, id)
@@ -51,7 +51,7 @@ async def get_form(
 async def update_form(
     id: int,
     form: sch.FormUpdate,
-    user: User = Depends(current_active_user),
+    user: User = Depends(get_current_superuser),
     session: AsyncSession = Depends(get_async_session)
 ) -> sch.Form:
     if user.id != form.creator_id:

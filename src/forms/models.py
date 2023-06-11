@@ -12,7 +12,7 @@ class Option(Base):
     id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
     title: str = sa.Column(sa.String)
     item_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('item.id'), nullable=False)
+        sa.Integer, sa.ForeignKey('item.id', ondelete="CASCADE"), nullable=False)
 
     item = relationship('Item',
                         uselist=False, back_populates='options')
@@ -26,7 +26,7 @@ class Item(Base):
     item_order: int = sa.Column(sa.Integer)
     required: bool = sa.Column(sa.Boolean)
     form_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('form.id'), nullable=False)
+        sa.Integer, sa.ForeignKey('form.id', ondelete="CASCADE"), nullable=False)
 
     form = relationship('Form',
                         uselist=False, back_populates='items')
@@ -44,7 +44,7 @@ class Form(Base):
     created_at: datetime = sa.Column(sa.DateTime(timezone=True), default=datetime.utcnow)
     link: str = sa.Column(sa.String)
     creator_id: uuid.UUID = sa.Column(
-        UUID(as_uuid=True), sa.ForeignKey('user.id'))
+        UUID(as_uuid=True), sa.ForeignKey('user.id', ondelete="CASCADE"))
 
     items = relationship('Item',
                          uselist=True, back_populates='form')

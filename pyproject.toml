@@ -12,6 +12,7 @@ sqlalchemy = "1.4.46"
 asyncpg = "^0.27.0"
 alembic = "^1.9.3"
 fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^10.3.0"}
+bcrypt = "^4.0.1"
 
 
 [tool.poetry.group.dev.dependencies]

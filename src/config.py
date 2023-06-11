@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     # auth
     SECRET: str
+    ALGORITM: str
     GOOGLE_OAUTH_CLIENT_ID: str
     GOOGLE_OAUTH_CLIENT_SECRET: str
 

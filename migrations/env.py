@@ -7,7 +7,7 @@ from alembic import context
 
 from src.config import settings
 from src.database import Base
-from src.auth.models import User  # , OAuthAccount
+from src.auth.models import User, RefreshSession  # , OAuthAccount
 from src.forms.models import Option, Item, Form
 
 # this is the Alembic Config object, which provides
