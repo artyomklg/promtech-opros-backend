@@ -13,10 +13,8 @@ class Option(Base):
     title: str = sa.Column(sa.String)
     item_id: int = sa.Column(
         sa.Integer, sa.ForeignKey('item.id', ondelete="CASCADE"), nullable=False)
-
     item = relationship('Item',
                         uselist=False, back_populates='options')
-
 
 class Item(Base):
     id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
@@ -27,12 +25,10 @@ class Item(Base):
     required: bool = sa.Column(sa.Boolean)
     form_id: int = sa.Column(
         sa.Integer, sa.ForeignKey('form.id', ondelete="CASCADE"), nullable=False)
-
     form = relationship('Form',
                         uselist=False, back_populates='items')
     options = relationship('Option',
                            uselist=True, back_populates='item')
-
 
 class Form(Base):
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
@@ -41,11 +37,12 @@ class Form(Base):
     is_template: bool = sa.Column(sa.Boolean)
     organization: str = sa.Column(sa.String)
     color: str = sa.Column(sa.String)
-    created_at: datetime = sa.Column(sa.DateTime(timezone=True), default=datetime.utcnow)
+    to_review: bool = sa.Column(sa.Boolean, default=False)
+    created_at: datetime = sa.Column(sa.DateTime(timezone=True),
+                                     default=datetime.utcnow)
     link: str = sa.Column(sa.String)
     creator_id: uuid.UUID = sa.Column(
         UUID(as_uuid=True), sa.ForeignKey('user.id', ondelete="CASCADE"))
-
     items = relationship('Item',
                          uselist=True, back_populates='form')
 

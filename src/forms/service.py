@@ -17,28 +17,38 @@ async def get_form(session: AsyncSession, id: int) -> m.Form:
     form = res.scalars().first()
     if not form:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f'Form with {id=} not found')
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Form with {id=} not found')
     return form
 
 
-async def get_list_templates(session: AsyncSession) -> list[m.Form]:
-    stmt = select(m.Form).filter(m.Form.is_template == True)
+async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, session: AsyncSession) -> list[m.Form]:
+    stmt = select(m.Form)
+    if templates:
+        stmt = stmt.filter(m.Form.is_template == True)
+    if my:
+        stmt = stmt.filter(m.Form.creator_id == creator_id)
     res = await session.execute(stmt)
     templates = res.scalars().all()
-    # print(templates)
     if not templates:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f'There are not templates')
-    # print(templates)
     return templates
 
 
 async def create_form(session: AsyncSession, creator_id: uuid.UUID) -> m.Form:
-    form_db = m.Form(creator_id=creator_id)
+    form_db = m.Form(
+        title='',
+        description='',
+        is_template=False,
+        organization='okb.jpg',
+        color='#F48221',
+        creator_id=creator_id
+    )
     session.add(form_db)
     await session.commit()
     await session.refresh(form_db)
-    form_db.link = f'http://127.0.0.1:3000/forms/{form_db.id}'
+    form_db.link = f'http://127.0.0.1:3000/forms/{form_db.id}/review'
     session.add(form_db)
     await session.commit()
     await session.refresh(form_db)
@@ -50,7 +60,7 @@ async def copy_form(session: AsyncSession, form: sch.Form, creator_id: uuid.UUID
         title=form.title,
         description=form.description,
         is_template=False,
-        organiztion=form.organiztion,
+        organization=form.organization,
         color=form.color,
         creator_id=creator_id
     )
@@ -58,6 +68,16 @@ async def copy_form(session: AsyncSession, form: sch.Form, creator_id: uuid.UUID
     session.add(new_form)
     await session.commit()
     print('added')
+
+    for item in form.items:
+        new_item = m.Item(
+            title=item.title,
+            description=item.description,
+            item_type=item.item_type,
+            item_order=item.item_order,
+            required=item.required,
+            form_id=new_form.id
+        )
     await session.refresh(new_form)
 
     print(new_form.__dict__)
@@ -82,7 +102,8 @@ async def update_form(session: AsyncSession, form: sch.Form, form_id: int):
         await session.execute(delete(m.Item).where(m.Item.id.in_(deleted_item_ids)))
 
     for item in form.items:
-        existing_item = next((i for i in existing_form.items if i.id == item.id), None)
+        existing_item = next(
+            (i for i in existing_form.items if i.id == item.id), None)
         if existing_item:
             existing_item.title = item.title
             existing_item.item_type = item.item_type
@@ -104,7 +125,8 @@ async def update_form(session: AsyncSession, form: sch.Form, form_id: int):
             print('add new item', new_item.__dict__)
 
         if existing_item:
-            existing_option_ids = {option.id for option in existing_item.options}
+            existing_option_ids = {
+                option.id for option in existing_item.options}
         else:
             existing_option_ids = set()
         updated_option_ids = {option.id for option in item.options}
@@ -114,7 +136,8 @@ async def update_form(session: AsyncSession, form: sch.Form, form_id: int):
             await session.execute(delete(m.Option).where(m.Option.id.in_(deleted_option_ids)))
 
         for option in item.options:
-            existing_option = next((o for o in existing_item.options if (o.id == option.id and option.id is not None)), None)
+            existing_option = next((o for o in existing_item.options if (
+                o.id == option.id and option.id is not None)), None)
 
             if existing_option:
                 existing_option.title = option.title

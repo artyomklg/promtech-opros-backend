@@ -19,12 +19,19 @@ class Settings(BaseSettings):
     ALGORITM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 20
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
-
-    GOOGLE_OAUTH_CLIENT_ID: str
-    GOOGLE_OAUTH_CLIENT_SECRET: str
+    # GOOGLE_OAUTH_CLIENT_ID: str
+    # GOOGLE_OAUTH_CLIENT_SECRET: str
 
     # origins
     CLIENT_ORIGIN: str
+
+    @property
+    def Database_URL(self):
+        return f'postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}'
+
+    @property
+    def Database_URL_psycopg2(self):
+        return f'postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}'
 
     class Config:
         env_file = env_path

@@ -10,10 +10,10 @@ class ChoisePrompt(BaseModel):
 class TextPrompt(BaseModel):
     placeholder: str
 
-class AnswerCreate(BaseModel):
+class Answer(BaseModel):
     item_id: int
     prompt: ChoisePrompt | TextPrompt
 
 
-class ReviewCreate(BaseModel):
-    answers: list[AnswerCreate] = []
+class Review(BaseModel):
+    answers: list[Answer] = []

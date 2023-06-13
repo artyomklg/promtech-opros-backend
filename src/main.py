@@ -34,7 +34,6 @@ async def timing_middleware(request: Request, call_next):
     end_time = time.time()
     execution_time = end_time - start_time
 
-    # Вывод времени выполнения в консоль
     print(f"Метод: {request.method}, Путь: {request.url.path}, Время выполнения: {execution_time} сек.")
 
     return response

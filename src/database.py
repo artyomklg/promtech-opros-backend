@@ -7,8 +7,6 @@ from sqlalchemy.pool import NullPool
 
 from .config import settings
 
-DATABASE_URL = f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}'
-
 
 @as_declarative()
 class Base:
@@ -20,7 +18,7 @@ class Base:
         return cls.__name__.lower()
 
 
-engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
+engine = create_async_engine(settings.Database_URL, poolclass=NullPool)
 async_session_maker = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False)
 

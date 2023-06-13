@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -110,7 +111,7 @@ class FormBase(BaseModel):
     title: str | None = None
     description: str | None = None
     is_template: bool = False
-    organiztion: Organization | None = Organization.OKB
+    organization: Organization | None = Organization.OKB
     color: Color | None = Color.Orange
     created_at: datetime | None
     link: str | None
@@ -119,21 +120,19 @@ class FormBase(BaseModel):
 
 class FormCreate(FormBase):
     title: str
-    organiztion: Organization
+    organization: Organization
     color: Color
     link: str
 
 
 class FormUpdate(FormBase):
     id: int | None
-    title: str
-    description: str
-    is_template: bool
+    title: str | None
+    description: str | None
+    is_template: bool = False
     organization: Organization
     color: Color
-    creator_id: uuid.UUID
-    created_at: datetime
-    link: str
+    link: str | None
     items: list[ItemUpdate] = []
 
     class Config:
@@ -161,7 +160,7 @@ class FormWithoutItems(FormBase):
     title: str
     description: str
     is_template: bool
-    organiztion: Organization
+    organization: Organization
     color: Color
     link: str
     created_at: datetime

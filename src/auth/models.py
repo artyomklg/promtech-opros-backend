@@ -9,8 +9,6 @@ from ..database import Base
 
 
 class User(Base):
-    __tablename__ = "user"
-
     id = sa.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = sa.Column(sa.String, unique=True, index=True)
     hashed_password = sa.Column(sa.String)
@@ -20,10 +18,11 @@ class User(Base):
 
 
 class RefreshSession(Base):
-    __tablename__ = "refresh_session"
-
+    __tablename__ = 'refresh_session'
     id = sa.Column(sa.Integer, primary_key=True, index=True)
-    user_id = sa.Column(UUID(as_uuid=True), sa.ForeignKey("user.id", ondelete="CASCADE"))
+    user_id = sa.Column(UUID(as_uuid=True), sa.ForeignKey(
+        "user.id", ondelete="CASCADE"))
     refresh_token = sa.Column(UUID(as_uuid=True), unique=True)
     expires_in = sa.Column(sa.Integer)
-    created_at: datetime = sa.Column(sa.DateTime(timezone=True), server_default=func.now())
+    created_at: datetime = sa.Column(sa.DateTime(timezone=True),
+                                     server_default=func.now())

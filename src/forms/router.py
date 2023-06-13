@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import get_async_session, AsyncSession
-from ..auth.models import User
+from ..auth.schemas import User
 from ..auth.dependencies import get_current_superuser
 from . import models as m
 from . import schemas as sch
@@ -27,12 +27,28 @@ async def create_form(
 
 
 @forms_router.get('/', response_model=list[sch.FormWithoutItems])
-async def get_templates(
-        user: User = Depends(get_current_superuser),
-        session: AsyncSession = Depends(get_async_session)
+async def get_forms(
+    templates: bool,
+    my: bool,
+    user: User = Depends(get_current_superuser),
+    session: AsyncSession = Depends(get_async_session)
 ) -> list[sch.FormWithoutItems]:
-    templates = await service.get_list_templates(session)
+    templates = await service.get_list_forms(templates, my, user.id, session)
     return templates
+
+
+@forms_router.post('/{id}', response_model=sch.Form)
+async def form_to_review(
+    id: int,
+    user: User = Depends(get_current_superuser),
+    session: AsyncSession = Depends(get_async_session)
+) -> sch.Form:
+    res = await service.get_form(session, id)
+    if str(res.creator_id) != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    res.to_review = True
+    await session.commit()
+    return res
 
 
 @forms_router.get('/{id}', response_model=sch.Form)
@@ -42,7 +58,7 @@ async def get_form(
     session: AsyncSession = Depends(get_async_session)
 ) -> sch.Form:
     res = await service.get_form(session, id)
-    if res.creator_id != user.id:
+    if str(res.creator_id) != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return res
 

@@ -7,12 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-fastapi = {extras = ["all"], version = "^0.90.1"}
+fastapi = {extras = ["all"], version = "^0.96.1"}
 sqlalchemy = "1.4.46"
 asyncpg = "^0.27.0"
 alembic = "^1.9.3"
-fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^10.3.0"}
-bcrypt = "^4.0.1"
+psycopg2 = "^2.9.6"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+pyjwt = "^2.7.0"
 
 
 [tool.poetry.group.dev.dependencies]

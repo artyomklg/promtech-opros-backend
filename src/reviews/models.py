@@ -18,7 +18,7 @@ class Review(Base):
         sa.Integer, sa.ForeignKey('form.id', ondelete="CASCADE"), nullable=False)
     user_id: uuid.UUID = sa.Column(
         UUID(as_uuid=True), sa.ForeignKey('user.id', ondelete="CASCADE"))
-    response_time: datetime = sa.Column(
+    review_time: datetime = sa.Column(
         sa.DateTime(timezone=True), server_default=func.now())
 
     user = relationship('user_m.User',
