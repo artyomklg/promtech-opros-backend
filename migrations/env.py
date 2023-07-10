@@ -7,22 +7,14 @@ from alembic import context
 
 from src.config import settings
 from src.database import Base
-from src.auth.models import User, RefreshSession  # , OAuthAccount
-from src.forms.models import Option, Item, Form
-from src.reviews.models import Review, Answer
+from src.users.models import UserModel, RefreshSessionModel
+# from src.forms.models import Option, Item, Form
+# from src.reviews.models import Review, Answer
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option('sqlalchemy.url', settings.Database_URL_psycopg2)
-
-# section = config.config_ini_section
-# config.set_section_option(section, "POSTGRES_USER", settings.POSTGRES_USER)
-# config.set_section_option(section, "POSTGRES_PASSWORD",
-#                           settings.POSTGRES_PASSWORD)
-# config.set_section_option(section, "POSTGRES_HOST", settings.POSTGRES_HOST)
-# config.set_section_option(section, "POSTGRES_PORT", settings.POSTGRES_PORT)
-# config.set_section_option(section, "POSTGRES_DB", settings.POSTGRES_DB)
+config.set_main_option('sqlalchemy.url', f"{settings.DATABASE_URL}?async_fallback=True")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

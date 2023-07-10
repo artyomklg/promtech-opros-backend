@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import get_async_session, AsyncSession
-from ..auth.schemas import User
-from ..auth.dependencies import get_current_superuser
+from ..users.schemas import User
+from ..users.dependencies import get_current_superuser
 from . import models as m
 from . import schemas as sch
 from . import service

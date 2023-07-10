@@ -10,7 +10,7 @@ from .routers import main_router
 app = FastAPI(title=settings.app_name)
 
 origins = [
-    settings.CLIENT_ORIGIN
+    'http://127.0.0.1:3000'
 ]
 
 app.add_middleware(

@@ -9,6 +9,8 @@ from ..database import Base
 
 
 class Option(Base):
+    __tablename__ = 'option'
+
     id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
     title: str = sa.Column(sa.String)
     item_id: int = sa.Column(
@@ -17,6 +19,8 @@ class Option(Base):
                         uselist=False, back_populates='options')
 
 class Item(Base):
+    __tablename__ = 'item'
+
     id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
     title: str = sa.Column(sa.String)
     description: str = sa.Column(sa.Text)
@@ -31,6 +35,8 @@ class Item(Base):
                            uselist=True, back_populates='item')
 
 class Form(Base):
+    __tablename__ = 'form'
+
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
     title = sa.Column(sa.String)
     description: str = sa.Column(sa.String)

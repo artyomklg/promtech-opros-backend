@@ -1,7 +1,7 @@
 from typing import Optional
 
-import jwt
-from fastapi import Depends, HTTPException, status, Request
+from jose import jwt
+from fastapi import Depends, HTTPException, status, Request, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import User
@@ -20,7 +20,7 @@ async def get_current_user(
 ) -> Optional[User]:
     try:
         payload = jwt.decode(token,
-                             settings.SECRET, algorithms=[settings.ALGORITM])
+                             settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
             raise InvalidTokenException

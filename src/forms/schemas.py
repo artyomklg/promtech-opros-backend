@@ -51,7 +51,7 @@ class OptionUpdate(OptionBase):
     item_id: int | None
 
     class Config():
-        orm_mode = True
+        from_attributes = True
 
 
 class Option(OptionBase):
@@ -60,7 +60,7 @@ class Option(OptionBase):
     item_id: int
 
     class Config():
-        orm_mode = True
+        from_attributes = True
 
 
 class ItemBase(BaseModel):
@@ -91,7 +91,7 @@ class ItemUpdate(ItemBase):
     options: list[OptionUpdate] = []
 
     class Config():
-        orm_mode = True
+        from_attributes = True
 
 
 class Item(ItemBase):
@@ -104,7 +104,7 @@ class Item(ItemBase):
     options: list[Option] = []
 
     class Config():
-        orm_mode = True
+        from_attributes = True
 
 
 class FormBase(BaseModel):
@@ -136,7 +136,7 @@ class FormUpdate(FormBase):
     items: list[ItemUpdate] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Form(FormBase):
@@ -152,7 +152,7 @@ class Form(FormBase):
     items: list[Item] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class FormWithoutItems(FormBase):
@@ -167,4 +167,4 @@ class FormWithoutItems(FormBase):
     creator_id: uuid.UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True

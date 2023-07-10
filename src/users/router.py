@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Response, Request
+from fastapi import APIRouter, Depends, Response, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,43 +16,23 @@ auth_router = APIRouter(prefix="/auth", tags=["auth"])
 user_router = APIRouter(prefix="/users", tags=["user"])
 
 
-@auth_router.post("/register", response_model=User)
+@auth_router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
-    user: UserCreate,
-    service: UserService = Depends(),
-    session: AsyncSession = Depends(get_async_session)
-):
-    return await service.register_new_user(user, session)
+    user: UserCreate
+) -> User:
+    return await UserService.register_new_user(user)
 
 
 @auth_router.post("/login")
 async def login(
     response: Response,
-    credentials: OAuth2PasswordRequestForm = Depends(),
-    session: AsyncSession = Depends(get_async_session),
-    service: AuthService = Depends()
-):
-    user = await service.authenticate_user(credentials.username, credentials.password, session)
+    credentials: OAuth2PasswordRequestForm = Depends()
+) -> Token:
+    user = await AuthService.authenticate_user(credentials.username, credentials.password)
     if not user:
         raise InvalidCredentialsException
-    token = await service.create_token(user, session)
-    response.set_cookie(
-        'access_token',
-        token.access_token,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        secure=True,
-        httponly=True,
-        samesite='lax',
-    )
-    response.set_cookie(
-        'refresh_token',
-        token.refresh_token,
-        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 30 * 24 * 60,
-        secure=True,
-        httponly=True,
-        samesite='lax',
-    )
-    return {"access_token": token.access_token, "token_type": "bearer"}
+    token = await AuthService.create_token(response, user)
+    return token
 
 
 @auth_router.post("/logout")

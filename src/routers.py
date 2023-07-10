@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from .auth import auth_router, user_router
+from .users import auth_router, user_router
 from .forms import forms_router
 from .reviews import reviews_router
 

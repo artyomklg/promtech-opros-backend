@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from ..database import Base
 from ..forms import models as form_m
-from ..auth import models as user_m
+from ..users import models as user_m
 
 
 class Review(Base):
