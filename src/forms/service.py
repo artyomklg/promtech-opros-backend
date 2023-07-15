@@ -10,7 +10,7 @@ from . import models as m
 from . import schemas as sch
 
 
-async def get_form(session: AsyncSession, id: int) -> m.Form:
+async def get_form(session: AsyncSession, id: int) -> m.FormModel:
     stmt = select(m.Form).options(joinedload(
         m.Form.items).subqueryload(m.Item.options)).filter(m.Form.id == id)
     res = await session.execute(stmt)
@@ -22,7 +22,7 @@ async def get_form(session: AsyncSession, id: int) -> m.Form:
     return form
 
 
-async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, session: AsyncSession) -> list[m.Form]:
+async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, session: AsyncSession) -> list[m.FormModel]:
     stmt = select(m.Form)
     if templates:
         stmt = stmt.filter(m.Form.is_template == True)
@@ -36,7 +36,7 @@ async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, sessi
     return templates
 
 
-async def create_form(session: AsyncSession, creator_id: uuid.UUID) -> m.Form:
+async def create_form(session: AsyncSession, creator_id: uuid.UUID) -> m.FormModel:
     form_db = m.Form(
         title='',
         description='',
@@ -55,7 +55,7 @@ async def create_form(session: AsyncSession, creator_id: uuid.UUID) -> m.Form:
     return form_db
 
 
-async def copy_form(session: AsyncSession, form: sch.Form, creator_id: uuid.UUID) -> m.Form:
+async def copy_form(session: AsyncSession, form: sch.Form, creator_id: uuid.UUID) -> m.FormModel:
     new_form = m.Form(
         title=form.title,
         description=form.description,

@@ -1,56 +1,63 @@
-import uuid
+from typing import List, Optional
 from datetime import datetime
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 from ..database import Base
 
 
-class Option(Base):
+class OptionModel(Base):
     __tablename__ = 'option'
 
-    id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    title: str = sa.Column(sa.String)
-    item_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('item.id', ondelete="CASCADE"), nullable=False)
-    item = relationship('Item',
-                        uselist=False, back_populates='options')
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    title: Mapped[Optional[str]]
+    item_id: Mapped[int] = mapped_column(sa.ForeignKey(
+        'item.id', ondelete="CASCADE"), nullable=False)
 
-class Item(Base):
+    item: Mapped['ItemModel'] = relationship('ItemModel',
+                                             uselist=False, back_populates='options')
+
+
+class ItemModel(Base):
     __tablename__ = 'item'
 
-    id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    title: str = sa.Column(sa.String)
-    description: str = sa.Column(sa.Text)
-    item_type: str = sa.Column(sa.String)
-    item_order: int = sa.Column(sa.Integer)
-    required: bool = sa.Column(sa.Boolean)
-    form_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('form.id', ondelete="CASCADE"), nullable=False)
-    form = relationship('Form',
-                        uselist=False, back_populates='items')
-    options = relationship('Option',
-                           uselist=True, back_populates='item')
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    title: Mapped[Optional[str]]
+    description: Mapped[Optional[str]]
+    item_type: Mapped[str]
+    item_order: Mapped[int]
+    required: Mapped[bool] = mapped_column(default=True)
+    form_id: Mapped[int] = mapped_column(sa.ForeignKey(
+        'form.id', ondelete="CASCADE"), nullable=False)
 
-class Form(Base):
+    form: Mapped['FormModel'] = relationship('FormModel',
+                                             uselist=False, back_populates='items')
+    options: Mapped[List[OptionModel]] = relationship('OptionModel',
+                                                      uselist=True, back_populates='item')
+
+
+class FormModel(Base):
     __tablename__ = 'form'
 
-    id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    title = sa.Column(sa.String)
-    description: str = sa.Column(sa.String)
-    is_template: bool = sa.Column(sa.Boolean)
-    organization: str = sa.Column(sa.String)
-    color: str = sa.Column(sa.String)
-    to_review: bool = sa.Column(sa.Boolean, default=False)
-    created_at: datetime = sa.Column(sa.DateTime(timezone=True),
-                                     default=datetime.utcnow)
-    link: str = sa.Column(sa.String)
-    creator_id: uuid.UUID = sa.Column(
-        UUID(as_uuid=True), sa.ForeignKey('user.id', ondelete="CASCADE"))
-    items = relationship('Item',
-                         uselist=True, back_populates='form')
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    title: Mapped[Optional[str]]
+    description: Mapped[Optional[str]]
+    is_template: Mapped[bool] = mapped_column(default=False)
+    organization: Mapped[str] = mapped_column(default='okb.jpg')
+    color: Mapped[str] = mapped_column(default='red')
+    to_review: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(sa.TIMESTAMP(timezone=True),
+                                                 server_default=func.now())
+    link: Mapped[Optional[str]]
+    creator_id: Mapped[uuid.UUID] = mapped_column(UUID, sa.ForeignKey(
+        'user.id', ondelete="SET NULL"), nullable=False)
+
+    items: Mapped[List[ItemModel]] = relationship('ItemModel',
+                                                  uselist=True, back_populates='form')
 
 
 # class Question(Base):

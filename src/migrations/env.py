@@ -1,3 +1,5 @@
+import sys
+from os.path import abspath, dirname
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -5,9 +7,12 @@ from sqlalchemy import pool
 
 from alembic import context
 
+sys.path.insert(0, dirname(dirname(dirname(abspath(__file__)))))
+
 from src.config import settings
 from src.database import Base
 from src.users.models import UserModel, RefreshSessionModel
+from src.forms.models import FormModel, ItemModel, OptionModel
 # from src.forms.models import Option, Item, Form
 # from src.reviews.models import Review, Answer
 
