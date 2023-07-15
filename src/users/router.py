@@ -1,12 +1,13 @@
+from typing import List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, Response, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .schemas import UserCreate, Token, User
+from .schemas import UserCreate, Token, User, UserUpdate
 from .service import AuthService, UserService
-from .dependencies import get_current_user, get_current_superuser
+from .dependencies import get_current_user, get_current_superuser, get_current_active_user
 from ..database import get_async_session
 from ..exceptions import InvalidCredentialsException
 from ..config import settings
@@ -51,7 +52,7 @@ async def login(
 async def logout(
     request: Request,
     response: Response,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_active_user),
 ):
     response.delete_cookie('access_token')
     response.delete_cookie('refresh_token')
@@ -86,89 +87,75 @@ async def refresh_token(
 
 @auth_router.post("/abort")
 async def abort_all_sessions(
-    request: Request,
     response: Response,
-    session: AsyncSession = Depends(get_async_session),
-    user: User = Depends(get_current_user),
-    service: AuthService = Depends()
+    user: User = Depends(get_current_user)
 ):
-    response.set_cookie('access_token', '', max_age=0)
-    response.set_cookie('refresh_token', '', max_age=0)
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
 
-    await service.abort_all_sessions(user.id, session)
+    await AuthService.abort_all_sessions(user.id)
     return {"message": "All sessions was aborted"}
 
 
-@user_router.get("", response_model=list[User])
+@user_router.get("")
 async def get_users_list(
-    current_user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session),
-    service: UserService = Depends()
-):
-    return await service.get_users_list(session)
+    offset: Optional[int] = 0,
+    limit: Optional[int] = 100,
+    current_user: User = Depends(get_current_superuser)
+) -> List[User]:
+    return await UserService.get_users_list(offset=offset, limit=limit)
 
 
-@user_router.get("/me", response_model=User)
+@user_router.get("/me")
 async def get_current_user(
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-    service: UserService = Depends()
-):
-    return await service.get_user(current_user.id, session)
+    current_user: User = Depends(get_current_active_user)
+) -> User:
+    return await UserService.get_user(current_user.id)
 
 
-@user_router.put("/me", response_model=User)
+@user_router.put("/me")
 async def update_current_user(
-    user: User,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-    service: UserService = Depends()
-):
-    return await service.update_user(current_user.id, user, session)
+    user: UserUpdate,
+    current_user: User = Depends(get_current_user)
+) -> User:
+    return await UserService.update_user(current_user.id, user)
 
 
-@user_router.delete("/me", response_model=User)
+@user_router.delete("/me")
 async def delete_current_user(
     request: Request,
     response: Response,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-    user_service: UserService = Depends(),
-    auth_service: AuthService = Depends()
+    current_user: User = Depends(get_current_user)
 ):
-    response.set_cookie('access_token', '', max_age=0)
-    response.set_cookie('refresh_token', '', max_age=0)
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
 
-    await auth_service.logout(request.cookies.get('refresh_token'), session)
-    return await user_service.delete_user(current_user.id, session)
+    await AuthService.logout(request.cookies.get('refresh_token'))
+    await UserService.delete_user(current_user.id)
+    return {"message": "User status is not active already"}
 
 
-@user_router.get("/{user_id}", response_model=User)
+@user_router.get("/{user_id}")
 async def get_user(
     user_id: str,
-    current_user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session),
-    service: UserService = Depends()
-):
-    return await service.get_user(user_id, session)
+    current_user: User = Depends(get_current_superuser)
+) -> User:
+    return await UserService.get_user(user_id)
 
 
-@user_router.put("/{user_id}", response_model=User)
+@user_router.put("/{user_id}")
 async def update_user(
     user_id: str,
     user: User,
-    current_user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session),
-    service: UserService = Depends()
-):
-    return await service.update_user_from_superuser(user_id, user, session)
+    current_user: User = Depends(get_current_superuser)
+) -> User:
+    return await UserService.update_user_from_superuser(user_id, user)
 
 
 @user_router.delete("/{user_id}")
 async def delete_user(
     user_id: str,
-    current_user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session),
-    service: UserService = Depends()
+    current_user: User = Depends(get_current_superuser)
 ):
-    await service.delete_user(user_id, session)
+    await UserService.delete_user_from_superuser(user_id)
+    return {"message": "User was deleted"}

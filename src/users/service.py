@@ -4,11 +4,9 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 from jose import jwt
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 
 from .utils import get_password_hash, is_valid_password
-from .schemas import RefreshSessionUpdate, UserCreate, User, Token, UserCreateDB, RefreshSessionCreate, UserUpdateDB
+from .schemas import RefreshSessionUpdate, UserCreate, User, Token, UserCreateDB, RefreshSessionCreate, UserUpdate, UserUpdateDB
 from .models import UserModel, RefreshSessionModel
 from .dao import UserDAO, RefreshSessionDAO
 from ..exceptions import InvalidTokenException, TokenExpiredException
@@ -111,24 +109,35 @@ class UserService:
         return db_user
 
     @classmethod
-    async def update_user(cls, user_id: str, user: User, session: AsyncSession) -> User:
-        res = await session.execute(select(UserModel).filter(UserModel.id == user_id))
-        db_user = res.scalars().first()
-        if db_user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        db_user.email = user.email
-        db_user.fio = user.fio
-        await session.commit()
-        return User(id=str(db_user.id), email=db_user.email, fio=db_user.fio, is_active=db_user.is_active, is_superuser=db_user.is_superuser)
-
-    @classmethod
     async def get_user(cls, user_id: uuid.UUID) -> UserModel:
         db_user = await UserDAO.find_one_or_none(id=user_id)
         if db_user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         return db_user
+
+    @classmethod
+    async def update_user(cls, user_id: uuid.UUID, user: UserUpdate) -> UserModel:
+        db_user = await UserDAO.find_one_or_none(UserModel.id == user_id)
+        if db_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        if user.password:
+            user_in = UserUpdateDB(
+                **user.model_dump
+                (
+                    exclude={'is_active', 'is_verified', 'is_superuser'},
+                    exclude_unset=True
+                ),
+                hashed_password=get_password_hash(user.password)
+            )
+        else:
+            user_in = UserUpdateDB(**user.model_dump())
+
+        return await UserDAO.update(
+            UserModel.id == user_id,
+            obj_in=user_in)
 
     @classmethod
     async def delete_user(cls, user_id: uuid.UUID):
@@ -140,19 +149,6 @@ class UserService:
             UserModel.id == user_id,
             {'is_active': False}
         )
-
-    @classmethod
-    async def update_user_from_superuser(cls, user_id: str, user: User, session: AsyncSession) -> User:
-        res = await session.execute(select(UserModel).filter(UserModel.id == user_id))
-        db_user = res.scalars().first()
-        if db_user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        db_user.email = user.email
-        db_user.fio = user.fio
-        db_user.is_superuser = user.is_superuser
-        await session.commit()
-        return User(id=str(db_user.id), email=db_user.email, fio=db_user.fio, is_active=db_user.is_active, is_superuser=db_user.is_superuser)
 
     @classmethod
     async def get_users_list(cls, *filter, offset: int = 0, limit: int = 100, **filter_by) -> list[UserModel]:
@@ -170,3 +166,19 @@ class UserService:
                 is_superuser=db_user.is_superuser
             ) for db_user in users
         ]
+
+    @classmethod
+    async def update_user_from_superuser(cls, user_id: uuid.UUID, user: UserUpdate) -> User:
+        db_user = await UserDAO.find_one_or_none(UserModel.id == user_id)
+        if db_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        user_in = UserUpdateDB(**user.model_dump(exclude_unset=True))
+        return await UserDAO.update(
+            UserModel.id == user_id,
+            obj_in=user_in)
+
+    @classmethod
+    async def delete_user_from_superuser(cls, user_id: uuid.UUID):
+        await UserDAO.delete(UserModel.id == user_id)
