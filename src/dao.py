@@ -1,6 +1,7 @@
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 
 from sqlalchemy import delete, insert, select, update
+from sqlalchemy.sql import func
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 
@@ -39,7 +40,6 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             .limit(limit)
         )
         async with async_session_maker() as session:
-
             result = await session.execute(stmt)
             return result.scalars().all()
 
@@ -70,8 +70,8 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return None
 
     @classmethod
-    async def delete(cls, **filter_by) -> None:
-        stmt = delete(cls.model).filter_by(**filter_by)
+    async def delete(cls, *filter, **filter_by) -> None:
+        stmt = delete(cls.model).filter(*filter).filter_by(**filter_by)
         async with async_session_maker() as session:
             await session.execute(stmt)
             await session.commit()
@@ -79,10 +79,10 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     @classmethod
     async def update(
         cls,
-        *,
+        *where,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]],
-        id: Any
-    ) -> Optional[ModelType]:
+        # id: Any
+    ) -> Optional[ModelType]:  # Вроде работает, сильно не тестил
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
@@ -90,7 +90,8 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
         stmt = (
             update(cls.model).
-            where(cls.model.c.id == id).
+            # where(cls.model.id == id).
+            where(*where).
             values(**update_data).
             returning(cls.model)
         )
@@ -101,7 +102,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return result.scalars().one()
 
     @classmethod
-    async def add_bulk(cls, *data):
+    async def add_bulk(cls, *data):  # mappings -> scalars
         try:
             stmt = insert(cls.model).values(*data).returning(cls.model.id)
             async with async_session_maker() as session:
@@ -117,3 +118,10 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
             # logger.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
             return None
+
+    @classmethod
+    async def count(cls):  # не тестил, но чисто теоретически должно работать
+        stmt = select(func.count()).select_from(cls.model)
+        async with async_session_maker() as session:
+            result = await session.execute(stmt)
+            return result.scalar()

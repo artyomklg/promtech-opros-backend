@@ -1,22 +1,19 @@
 from typing import Optional
+import uuid
 
 from jose import jwt
-from fastapi import Depends, HTTPException, status, Request, Header
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, HTTPException, status
 
 from .schemas import User
-from .exceptions import InvalidTokenException
 from .utils import OAuth2PasswordBearerWithCookie
 from .service import UserService
-from ..database import get_async_session
+from ..exceptions import InvalidTokenException
 from ..config import settings
 
 oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/auth/login")
 
 async def get_current_user(
-        session: AsyncSession = Depends(get_async_session),
-        token: str = Depends(oauth2_scheme),
-        service: UserService = Depends()
+        token: str = Depends(oauth2_scheme)
 ) -> Optional[User]:
     try:
         payload = jwt.decode(token,
@@ -26,7 +23,7 @@ async def get_current_user(
             raise InvalidTokenException
     except Exception:
         raise InvalidTokenException
-    return await service.get_user(user_id, session)
+    return await UserService.get_user(uuid.UUID(user_id))
 
 
 async def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:

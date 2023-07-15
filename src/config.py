@@ -1,9 +1,6 @@
 from typing import Literal
-import pathlib
 
-from pydantic_settings import BaseSettings
-
-env_path = f'{pathlib.Path(__file__).parent.parent.absolute()}\\.env'
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -47,12 +44,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
 
-    @property
-    def Database_URL(self):
-        return f'postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}'
-
-    class Config:
-        env_file = '.env'
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
 
 settings: Settings = Settings()
+
+
+if __name__ == '__main__':
+    print(settings.model_dump())
