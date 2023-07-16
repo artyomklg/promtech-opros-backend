@@ -1,57 +1,22 @@
-import enum
 import uuid
 from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-class ItemType(str, enum.Enum):
-    ChoiceQuestion = 'choiceQuestion'
-    ScaleQuestion = 'multychoiceQuestion'
-    TextQuestion = 'textQuestion'
-    LongTextQuestion = 'longTextQuestion'
-
-
-class Color(str, enum.Enum):
-    Red = 'red'
-    Orange = '#F48221'
-    Yellow = 'Yellow'
-    LimeGreen = 'LimeGreen'
-    Aqua = 'Aqua'
-    MediumBlue = 'MediumBlue'
-    DarkOrchid = 'DarkOrchid'
-    Black = 'Black'
-
-
-class Organization(str, enum.Enum):
-    OKB = 'okb.jpg'
-    PROMTEX = 'promtex.jpg'
-    PROMTEXIRK = 'promtexirk.jpg'
-    PROMTEXKAZ = 'promtexkaz.jpg'
-    ZAVOD = 'zavod.jpg'
-    ATOMSPEC = 'atomspec.jpg'
-    KAZZAVOD = 'kazzavod.jpg'
-    LOGO1 = 'logo1.jpg'
+from .enums import ItemType, Color, Organization
 
 
 class OptionBase(BaseModel):
-    title: str | None = None
-    item_id: int | None = None
+    title: Optional[str] = None
 
 
 class OptionCreate(OptionBase):
-    title: str
     item_id: int
 
 
 class OptionUpdate(OptionBase):
-    id: int | None
-    title: str
-    item_id: int | None
-
-    class Config():
-        from_attributes = True
+    pass
 
 
 class Option(OptionBase):
@@ -64,17 +29,16 @@ class Option(OptionBase):
 
 
 class ItemBase(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    item_type: ItemType | None = None
-    item_order: int | None = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    item_type: ItemType = ItemType.ChoiceQuestion
+    item_order: Optional[int] = None
     required: bool = False
-    form_id: int | None = None
+    form_id: Optional[int] = None
 
 
 class ItemCreate(ItemBase):
     title: str
-    description: str | None = None
     item_type: ItemType
     item_order: int
     required: bool
@@ -82,7 +46,6 @@ class ItemCreate(ItemBase):
 
 
 class ItemUpdate(ItemBase):
-    id: int | None
     title: str
     item_type: ItemType
     item_order: int
@@ -115,7 +78,8 @@ class FormBase(BaseModel):
     color: Color | None = Color.Orange
     created_at: datetime | None
     link: str | None
-    creator_id: uuid.UUID | None = Field(default='a8abc8e7-c90c-48a4-bb58-bfd5e291ed66')
+    creator_id: uuid.UUID | None = Field(
+        default='a8abc8e7-c90c-48a4-bb58-bfd5e291ed66')
 
 
 class FormCreate(FormBase):
