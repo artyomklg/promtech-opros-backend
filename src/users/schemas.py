@@ -1,11 +1,11 @@
 import uuid
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 
 class UserBase(BaseModel):
-    email: Optional[str] = Field(None)
+    email: Optional[EmailStr] = Field(None)
     fio: Optional[str] = Field(None)
     is_active: bool = Field(True)
     is_verified: bool = Field(False)
@@ -13,7 +13,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    email: str
+    email: EmailStr
     fio: str
     password: str
 
@@ -24,7 +24,7 @@ class UserUpdate(UserBase):
 
 class User(UserBase):
     id: uuid.UUID
-    email: str
+    email: EmailStr
     fio: str
     is_active: bool
     is_verified: bool
