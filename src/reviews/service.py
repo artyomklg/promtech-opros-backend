@@ -9,21 +9,15 @@ from .models import Review as ReviewModel, Answer as AnswerModel
 from .schemas import Review, Answer, TextPrompt, ChoisePrompt
 
 
-async def create_review(
-        review: Review,
-        session: AsyncSession
-):
-    ...
+class ReviewService:
+    @classmethod
+    async def create_review(cls, review: Review):
+        pass
 
+    @classmethod
+    async def get_review(cls, review_id: int):
+        pass
 
-async def get_review(
-        review_id: int,
-        session: AsyncSession
-):
-    ...
-
-
-async def get_list_review(
-        form_id: int
-):
-    ...
+    @classmethod
+    async def get_list_review(cls, form_id: int):
+        pass
