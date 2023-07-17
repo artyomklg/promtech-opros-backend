@@ -1,3 +1,4 @@
+from typing import List, Optional
 import uuid
 
 from fastapi import HTTPException, status
@@ -6,152 +7,127 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import joinedload
 
-from . import models as m
+from .models import OptionModel, ItemModel, FormModel
+from .dao import OptionDAO, ItemDAO, FormDAO
+from .schemas import FormCreate, FormUpdate, UpdateSchema
+from ..database import async_session_maker
 from . import schemas as sch
 
 
-async def get_form(session: AsyncSession, id: int) -> m.FormModel:
-    stmt = select(m.Form).options(joinedload(
-        m.Form.items).subqueryload(m.Item.options)).filter(m.Form.id == id)
-    res = await session.execute(stmt)
-    form = res.scalars().first()
-    if not form:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Form with {id=} not found')
-    return form
+class FormService():
+    @classmethod
+    async def create_form(cls, user_id: uuid.UUID) -> FormModel:
+        async with async_session_maker() as session:
+            new_form = await FormDAO.add(session, FormCreate(creator_id=user_id))
 
-
-async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, session: AsyncSession) -> list[m.FormModel]:
-    stmt = select(m.Form)
-    if templates:
-        stmt = stmt.filter(m.Form.is_template == True)
-    if my:
-        stmt = stmt.filter(m.Form.creator_id == creator_id)
-    res = await session.execute(stmt)
-    templates = res.scalars().all()
-    if not templates:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f'There are not templates')
-    return templates
-
-
-async def create_form(session: AsyncSession, creator_id: uuid.UUID) -> m.FormModel:
-    form_db = m.Form(
-        title='',
-        description='',
-        is_template=False,
-        organization='okb.jpg',
-        color='#F48221',
-        creator_id=creator_id
-    )
-    session.add(form_db)
-    await session.commit()
-    await session.refresh(form_db)
-    form_db.link = f'http://127.0.0.1:3000/forms/{form_db.id}/review'
-    session.add(form_db)
-    await session.commit()
-    await session.refresh(form_db)
-    return form_db
-
-
-async def copy_form(session: AsyncSession, form: sch.Form, creator_id: uuid.UUID) -> m.FormModel:
-    new_form = m.Form(
-        title=form.title,
-        description=form.description,
-        is_template=False,
-        organization=form.organization,
-        color=form.color,
-        creator_id=creator_id
-    )
-    print(new_form.__dict__)
-    session.add(new_form)
-    await session.commit()
-    print('added')
-
-    for item in form.items:
-        new_item = m.Item(
-            title=item.title,
-            description=item.description,
-            item_type=item.item_type,
-            item_order=item.item_order,
-            required=item.required,
-            form_id=new_form.id
-        )
-    await session.refresh(new_form)
-
-    print(new_form.__dict__)
-    return new_form
-
-
-async def update_form(session: AsyncSession, form: sch.Form, form_id: int):
-    existing_form = await get_form(session, form_id)
-
-    existing_form.title = form.title
-    existing_form.description = form.description
-    existing_form.is_template = form.is_template
-    existing_form.organization = form.organization
-    existing_form.color = form.color
-    existing_form.link = form.link
-
-    existing_item_ids = {item.id for item in existing_form.items}
-    updated_item_ids = {item.id for item in form.items}
-
-    deleted_item_ids = existing_item_ids - updated_item_ids
-    if deleted_item_ids:
-        await session.execute(delete(m.Item).where(m.Item.id.in_(deleted_item_ids)))
-
-    for item in form.items:
-        existing_item = next(
-            (i for i in existing_form.items if i.id == item.id), None)
-        if existing_item:
-            existing_item.title = item.title
-            existing_item.item_type = item.item_type
-            existing_item.item_order = item.item_order
-            existing_item.required = item.required
-        else:
-            new_item = m.Item(
-                title=item.title,
-                item_type=item.item_type,
-                item_order=item.item_order,
-                required=item.required,
-                form_id=form_id,
-                options=[]
+            form = await FormDAO.update(
+                session,
+                FormModel.id == new_form.id,
+                obj_in=FormUpdate(
+                    link=f'http://127.0.0.1:3000/forms/{new_form.id}')
             )
-            existing_form.items.append(new_item)
             await session.commit()
-            item.id = new_item.id
-            existing_item = new_item
-            print('add new item', new_item.__dict__)
+        return form
 
-        if existing_item:
-            existing_option_ids = {
-                option.id for option in existing_item.options}
-        else:
-            existing_option_ids = set()
-        updated_option_ids = {option.id for option in item.options}
+    @classmethod
+    async def copy_form(cls, form_id: int, creator_id: uuid.UUID) -> FormModel:
+        async with async_session_maker() as session:
+            original_form = await FormDAO.find_form(session, form_id)
 
-        deleted_option_ids = existing_option_ids - updated_option_ids
-        if deleted_option_ids:
-            await session.execute(delete(m.Option).where(m.Option.id.in_(deleted_option_ids)))
+            if not original_form:
+                raise HTTPException(status_code=404, detail="Form not found")
 
-        for option in item.options:
-            existing_option = next((o for o in existing_item.options if (
-                o.id == option.id and option.id is not None)), None)
+            form = await FormDAO.add(
+                session,
+                obj_in={
+                    'title': original_form.title,
+                    'description': original_form.description,
+                    'is_template': False,
+                    'organization': original_form.organization,
+                    'color': original_form.color,
+                    'to_review': False,
+                    'creator_id': creator_id
+                }
+            )
+            new_form = await FormDAO.update(
+                session,
+                FormModel.id == form.id,
+                obj_in={'link': f'http://127.0.0.1:3000/forms/{form.id}'}
+            )
 
-            if existing_option:
-                existing_option.title = option.title
-            else:
-                new_option = m.Option(
-                    title=option.title
+            for original_item in original_form.items:
+                new_item = await ItemDAO.add(
+                    session,
+                    obj_in={
+                        'title': original_item.title,
+                        'description': original_item.description,
+                        'item_type': original_item.item_type,
+                        'item_order': original_item.item_order,
+                        'required': original_item.required,
+                        'form_id': new_form.id
+                    }
                 )
-                if existing_item:
-                    existing_item.options.append(new_option)
-                    print('add new option', new_option.__dict__)
+                for original_option in original_item.options:
+                    new_option = await OptionDAO.add(
+                        session,
+                        obj_in={
+                            'title': original_option.title,
+                            'item_id': new_item.id
+                        }
+                    )
+                    new_item.options.append(new_option)
+                new_form.items.append(new_item)
 
-    try:
-        await session.commit()
-        return existing_form
-    except Exception as e:
-        await session.rollback()
-        return
+            await session.commit()
+        return new_form
+
+    @classmethod
+    async def get_form(cls, id: int) -> FormModel:
+        async with async_session_maker() as session:
+            form = await FormDAO.find_form(session, id)
+        if not form:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'Form with {id=} not found')
+        return form
+
+    @classmethod
+    async def get_list_forms(cls, is_template: bool, my: bool, creator_id: uuid.UUID, offset: int = 0, limit: int = 100) -> List[FormModel]:
+        async with async_session_maker() as session:
+            filter_by = {}
+            if is_template:
+                filter_by.update({'is_template': True})
+            if my:
+                filter_by.update({'creator_id': creator_id})
+
+            forms = await FormDAO.find_all(session, offset=offset, limit=limit, **filter_by)
+        return forms
+
+    @classmethod
+    async def form_to_review(cls, id: int) -> FormModel:
+        async with async_session_maker() as session:
+            form = await FormDAO.update(
+                session,
+                FormModel.id == id,
+                obj_in={
+                    'to_review': True
+                }
+            )
+
+    @classmethod
+    async def update_form(cls, update_schema: UpdateSchema, form_id: int):
+        pass
+
+
+# async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, session: AsyncSession) -> list[FormModel]:
+#     stmt = select(FormModel)
+#     if templates:
+#         stmt = stmt.filter(FormModel.is_template == True)
+#     if my:
+#         stmt = stmt.filter(FormModel.creator_id == creator_id)
+#     res = await session.execute(stmt)
+#     templates = res.scalars().all()
+#     if not templates:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, detail=f'There are not templates')
+#     return templates

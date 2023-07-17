@@ -3,6 +3,7 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.sql import func
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from .database import async_session_maker, Base
@@ -18,15 +19,15 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     model = None
 
     @classmethod
-    async def find_one_or_none(cls, *filter, **filter_by) -> Optional[ModelType]:
+    async def find_one_or_none(cls, session: AsyncSession, *filter, **filter_by) -> Optional[ModelType]:
         stmt = select(cls.model).filter(*filter).filter_by(**filter_by)
-        async with async_session_maker() as session:
-            result = await session.execute(stmt)
-            return result.scalars().one_or_none()
+        result = await session.execute(stmt)
+        return result.scalars().one_or_none()
 
     @classmethod
     async def find_all(
         cls,
+        session: AsyncSession,
         *filter,
         offset: int = 0,
         limit: int = 100,
@@ -39,13 +40,13 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             .offset(offset)
             .limit(limit)
         )
-        async with async_session_maker() as session:
-            result = await session.execute(stmt)
-            return result.scalars().all()
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     @classmethod
     async def add(
         cls,
+        session: AsyncSession,
         obj_in: Union[CreateSchemaType, Dict[str, Any]]
     ) -> Optional[ModelType]:
         if isinstance(obj_in, dict):
@@ -55,10 +56,8 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         try:
             stmt = insert(cls.model).values(
                 **create_data).returning(cls.model)
-            async with async_session_maker() as session:
-                result = await session.execute(stmt)
-                await session.commit()
-                return result.scalars().first()
+            result = await session.execute(stmt)
+            return result.scalars().first()
         except (SQLAlchemyError, Exception) as e:
             if isinstance(e, SQLAlchemyError):
                 msg = "Database Exc: Cannot insert data into table"
@@ -70,15 +69,14 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return None
 
     @classmethod
-    async def delete(cls, *filter, **filter_by) -> None:
+    async def delete(cls, session: AsyncSession, *filter, **filter_by) -> None:
         stmt = delete(cls.model).filter(*filter).filter_by(**filter_by)
-        async with async_session_maker() as session:
-            await session.execute(stmt)
-            await session.commit()
+        await session.execute(stmt)
 
     @classmethod
     async def update(
         cls,
+        session: AsyncSession,
         *where,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]],
         # id: Any
@@ -95,20 +93,15 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             values(**update_data).
             returning(cls.model)
         )
-        async with async_session_maker() as session:
-            result = await session.execute(stmt)
-            await session.commit()
-
+        result = await session.execute(stmt)
         return result.scalars().one()
 
     @classmethod
-    async def add_bulk(cls, *data):  # mappings -> scalars
+    async def add_bulk(cls, session: AsyncSession, *data):  # mappings -> scalars
         try:
             stmt = insert(cls.model).values(*data).returning(cls.model.id)
-            async with async_session_maker() as session:
-                result = await session.execute(stmt)
-                await session.commit()
-                return result.scalars().first()
+            result = await session.execute(stmt)
+            return result.scalars().first()
         except (SQLAlchemyError, Exception) as e:
             if isinstance(e, SQLAlchemyError):
                 msg = "Database Exc"
@@ -120,8 +113,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return None
 
     @classmethod
-    async def count(cls):  # не тестил, но чисто теоретически должно работать
+    async def count(cls, session: AsyncSession,):  # не тестил, но чисто теоретически должно работать
         stmt = select(func.count()).select_from(cls.model)
-        async with async_session_maker() as session:
-            result = await session.execute(stmt)
-            return result.scalar()
+        result = await session.execute(stmt)
+        return result.scalar()

@@ -1,75 +1,67 @@
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from ..database import get_async_session, AsyncSession
+from .service import FormService
 from ..users.schemas import User
 from ..users.dependencies import get_current_superuser
-from . import models as m
-from . import schemas as sch
-from . import service
+from ..users.models import UserModel
+from .schemas import Form, FormUpdate, FormWithoutItems, UpdateSchema
 
 forms_router: APIRouter = APIRouter(prefix='/forms', tags=["forms"])
 
 
-@forms_router.post('/', response_model=sch.Form)
+@forms_router.post('/') # ! ready
 async def create_form(
     id: int | None = None,
-    session: AsyncSession = Depends(get_async_session),
-    user: User = Depends(get_current_superuser),
-) -> sch.Form:
+    user: UserModel = Depends(get_current_superuser),
+) -> Form:
     if id:
-        form_db = await service.get_form(session, id)
-        form_sch = sch.Form.from_orm(form_db)
-        form_out = await service.copy_form(session, form_sch, user.id)
+        form_out = await FormService.copy_form(id, user.id)
         return form_out
     else:
-        form_out = await service.create_form(session, user.id)
-        return sch.FormWithoutItems.from_orm(form_out)
+        form_out = await FormService.create_form(user.id)
+        return form_out
 
 
-@forms_router.get('/', response_model=list[sch.FormWithoutItems])
-async def get_forms(
+@forms_router.get('/') # ! ready
+async def get_list_forms(
     templates: bool,
     my: bool,
-    user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session)
-) -> list[sch.FormWithoutItems]:
-    templates = await service.get_list_forms(templates, my, user.id, session)
-    return templates
+    offset: Optional[str] = 0,
+    limit: Optional[str] = 100,
+    user: UserModel = Depends(get_current_superuser)
+) -> List[FormWithoutItems]:
+    forms = await FormService.get_list_forms(templates, my, user.id, offset=offset, limit=limit)
+    return forms
 
 
-@forms_router.post('/{id}', response_model=sch.Form)
+@forms_router.post('/{id}')
 async def form_to_review(
     id: int,
-    user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session)
-) -> sch.Form:
-    res = await service.get_form(session, id)
-    if str(res.creator_id) != user.id:
+    user: UserModel = Depends(get_current_superuser)
+) -> Form:
+    form = await FormService.get_form(id)
+    if form.creator_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    res.to_review = True
-    await session.commit()
-    return res
+    form_out = await FormService.form_to_review(id)
+    return form_out
 
 
-@forms_router.get('/{id}', response_model=sch.Form)
+@forms_router.get('/{id}') # ! ready
 async def get_form(
     id: int,
-    user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session)
-) -> sch.Form:
-    res = await service.get_form(session, id)
-    if str(res.creator_id) != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return res
+    user: UserModel = Depends(get_current_superuser)
+) -> Form:
+    return await FormService.get_form(id)
+
 
 
 @forms_router.put('/{id}')
 async def update_form(
     id: int,
-    form: sch.FormUpdate,
-    user: User = Depends(get_current_superuser),
-    session: AsyncSession = Depends(get_async_session)
-) -> sch.Form:
+    form: FormUpdate,
+    user: User = Depends(get_current_superuser)
+) -> Form:
     if user.id != form.creator_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     res = await service.update_form(session, form, id)

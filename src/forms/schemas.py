@@ -1,6 +1,6 @@
+from typing import Any, Dict, List, Optional, Union
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -53,9 +53,6 @@ class ItemUpdate(ItemBase):
     form_id: int | None
     options: list[OptionUpdate] = []
 
-    class Config():
-        from_attributes = True
-
 
 class Item(ItemBase):
     id: int
@@ -71,36 +68,25 @@ class Item(ItemBase):
 
 
 class FormBase(BaseModel):
-    title: str | None = None
-    description: str | None = None
+    title: Optional[str] = None
+    description: Optional[str] = None
     is_template: bool = False
-    organization: Organization | None = Organization.OKB
-    color: Color | None = Color.Orange
-    created_at: datetime | None
-    link: str | None
-    creator_id: uuid.UUID | None = Field(
-        default='a8abc8e7-c90c-48a4-bb58-bfd5e291ed66')
+    organization: Organization = Organization.OKB
+    color: Color = Color.Red
+    link: Optional[str] = None
+    creator_id: Optional[uuid.UUID] = Field(None)
 
 
 class FormCreate(FormBase):
-    title: str
-    organization: Organization
     color: Color
     link: str
 
 
 class FormUpdate(FormBase):
-    id: int | None
-    title: str | None
-    description: str | None
-    is_template: bool = False
-    organization: Organization
-    color: Color
-    link: str | None
-    items: list[ItemUpdate] = []
-
-    class Config:
-        from_attributes = True
+    is_template: Optional[bool] = None
+    organization: Optional[Organization] = None
+    color: Optional[Color] = None
+    link: Optional[str] = None
 
 
 class Form(FormBase):
@@ -132,3 +118,8 @@ class FormWithoutItems(FormBase):
 
     class Config:
         from_attributes = True
+
+
+class UpdateSchema(BaseModel):
+    includeFormInResponse: bool
+    requests: List[Union[Dict[str, Any], str]]
