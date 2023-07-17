@@ -1,8 +1,8 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import List, Literal, Optional, Union
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import ItemType, Color, Organization
 
@@ -24,8 +24,7 @@ class Option(OptionBase):
     title: str
     item_id: int
 
-    class Config():
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ItemBase(BaseModel):
@@ -34,7 +33,6 @@ class ItemBase(BaseModel):
     item_type: ItemType = ItemType.ChoiceQuestion
     item_order: Optional[int] = None
     required: bool = False
-    form_id: Optional[int] = None
 
 
 class ItemCreate(ItemBase):
@@ -46,12 +44,7 @@ class ItemCreate(ItemBase):
 
 
 class ItemUpdate(ItemBase):
-    title: str
-    item_type: ItemType
-    item_order: int
-    required: bool
-    form_id: int | None
-    options: list[OptionUpdate] = []
+    pass
 
 
 class Item(ItemBase):
@@ -63,8 +56,7 @@ class Item(ItemBase):
     form_id: int
     options: list[Option] = []
 
-    class Config():
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FormBase(BaseModel):
@@ -74,12 +66,11 @@ class FormBase(BaseModel):
     organization: Organization = Organization.OKB
     color: Color = Color.Red
     link: Optional[str] = None
-    creator_id: Optional[uuid.UUID] = Field(None)
+    creator_id: Optional[uuid.UUID] = None
 
 
 class FormCreate(FormBase):
-    color: Color
-    link: str
+    creator_id: uuid.UUID
 
 
 class FormUpdate(FormBase):
@@ -91,24 +82,23 @@ class FormUpdate(FormBase):
 
 class Form(FormBase):
     id: int
-    title: str
-    description: str
+    title: Optional[str] = None
+    description: Optional[str] = None
     is_template: bool
     organization: Organization
     color: Color
     creator_id: uuid.UUID
     created_at: datetime
     link: str
-    items: list[Item] = []
+    items: Optional[List[Item]] = Field()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FormWithoutItems(FormBase):
     id: int
-    title: str
-    description: str
+    title: Optional[str] = None
+    description: Optional[str] = None
     is_template: bool
     organization: Organization
     color: Color
@@ -116,10 +106,20 @@ class FormWithoutItems(FormBase):
     created_at: datetime
     creator_id: uuid.UUID
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ItemMove(BaseModel):
+    original_location: int
+    new_location: int
+
+
+class ItemUpdateRequest(BaseModel):
+    item_id: int
+    item: ItemUpdate
 
 
 class UpdateSchema(BaseModel):
-    includeFormInResponse: bool
-    requests: List[Union[Dict[str, Any], str]]
+    type: Literal['updateForm', 'createItem',
+                  'moveItem', 'deleteItem', 'updateItem']
+    request: Union[FormUpdate, ItemCreate, ItemMove, int, ItemUpdateRequest]
