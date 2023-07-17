@@ -2,19 +2,16 @@ from typing import List, Optional
 import uuid
 
 from fastapi import HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-from sqlalchemy.orm import joinedload
 
 from .models import OptionModel, ItemModel, FormModel
 from .dao import OptionDAO, ItemDAO, FormDAO
-from .schemas import FormCreate, FormUpdate, UpdateSchema
+from .schemas import (FormCreate, FormUpdate, ItemCreate,
+                      ItemMove, ItemUpdateRequest, OptionCreate, OptionUpdateRequest, UpdateSchema)
 from ..database import async_session_maker
-from . import schemas as sch
 
 
-class FormService():
+class FormService:
     @classmethod
     async def create_form(cls, user_id: uuid.UUID) -> FormModel:
         async with async_session_maker() as session:
@@ -82,9 +79,12 @@ class FormService():
         return new_form
 
     @classmethod
-    async def get_form(cls, id: int) -> FormModel:
+    async def get_form(cls, id: int, without_items: bool = False) -> Optional[FormModel]:
         async with async_session_maker() as session:
-            form = await FormDAO.find_form(session, id)
+            if without_items:
+                form = await FormDAO.find_one_or_none(session, FormModel.id == id)
+            else:
+                form = await FormDAO.find_form(session, id)
         if not form:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -113,21 +113,72 @@ class FormService():
                     'to_review': True
                 }
             )
+            await session.commit()
+            # ! надо попробовать найти решение этой проблемы (returning в update не возвращает relationship-ы)
+            form = await FormDAO.find_form(session, id)
+
+        return form
 
     @classmethod
-    async def update_form(cls, update_schema: UpdateSchema, form_id: int):
-        pass
+    async def update_form_by_schema(cls, update_schemas: List[UpdateSchema], form_id: int, includeFormInResponse: bool) -> Optional[FormModel]:
+        async with async_session_maker() as session:
+            for update_schema in update_schemas:
+                match update_schema.type:
+                    case 'updateForm':
+                        pass
+                    case 'createItem':
+                        pass
+                    case 'moveItem':
+                        pass
+                    case 'deleteItem':
+                        pass
+                    case 'updateItem':
+                        pass
+                    case 'createOption':
+                        pass
+                    case 'deleteOption':
+                        pass
+                    case 'updateOption':
+                        pass
+            await session.commit()
 
+            if includeFormInResponse:
+                form_out = await FormDAO.find_form(session, form_id)
+                return form_out
+            else:
+                return None
 
-# async def get_list_forms(templates: bool, my: bool, creator_id: uuid.UUID, session: AsyncSession) -> list[FormModel]:
-#     stmt = select(FormModel)
-#     if templates:
-#         stmt = stmt.filter(FormModel.is_template == True)
-#     if my:
-#         stmt = stmt.filter(FormModel.creator_id == creator_id)
-#     res = await session.execute(stmt)
-#     templates = res.scalars().all()
-#     if not templates:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND, detail=f'There are not templates')
-#     return templates
+    @classmethod
+    async def _update_form(cls, session: AsyncSession, schema: FormUpdate, form_id: int):
+        await FormDAO.update(session, FormModel.id == id, obj_in=schema)
+
+    @classmethod
+    async def _create_item(cls, session: AsyncSession, schema: ItemCreate):
+        # !Добавить сдвиг элементов, если элемент создан не в самомм низу
+        await ItemDAO.add(session, obj_in=ItemCreate)
+
+    @classmethod
+    async def _move_item(cls, session: AsyncSession, schema: ItemMove, form_id: int):
+        # !Написать логику и скопипастить вниз и вверх
+        ...
+
+    @classmethod
+    async def _delete_item(cls, session: AsyncSession, schema: int):
+        # !Добавить сдвиг остальных элементов
+        await ItemDAO.delete(session, ItemModel.id == schema)
+
+    @classmethod
+    async def _update_item(cls, session: AsyncSession, schema: ItemUpdateRequest):
+        await ItemDAO.update(session, ItemModel.id == schema.item_id, obj_in=schema.item)
+
+    @classmethod
+    async def _create_option(cls, session: AsyncSession, schema: OptionCreate):
+        await OptionDAO.add(session, obj_in=schema)
+
+    @classmethod
+    async def _delete_option(cls, session: AsyncSession, schema: int):
+        await OptionDAO.delete(session, OptionModel.id == schema)
+
+    @classmethod
+    async def _update_option(cls, session: AsyncSession, schema: OptionUpdateRequest):
+        await OptionDAO.update(session, OptionModel.id == schema.option_id, obj_in=schema.option)

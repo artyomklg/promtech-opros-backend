@@ -21,7 +21,7 @@ class OptionUpdate(OptionBase):
 
 class Option(OptionBase):
     id: int
-    title: str
+    title: Optional[str] = None
     item_id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -31,25 +31,22 @@ class ItemBase(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     item_type: ItemType = ItemType.ChoiceQuestion
-    item_order: Optional[int] = None
     required: bool = False
 
 
 class ItemCreate(ItemBase):
-    title: str
-    item_type: ItemType
     item_order: int
-    required: bool
     form_id: int
 
 
 class ItemUpdate(ItemBase):
-    pass
+    item_type: Optional[ItemType] = None
+    required: Optional[bool] = None
 
 
 class Item(ItemBase):
     id: int
-    title: str
+    title: Optional[str] = None
     item_type: ItemType
     item_order: int
     required: bool
@@ -77,7 +74,6 @@ class FormUpdate(FormBase):
     is_template: Optional[bool] = None
     organization: Optional[Organization] = None
     color: Optional[Color] = None
-    link: Optional[str] = None
 
 
 class Form(FormBase):
@@ -90,7 +86,7 @@ class Form(FormBase):
     creator_id: uuid.UUID
     created_at: datetime
     link: str
-    items: Optional[List[Item]] = Field()
+    items: List[Item] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -119,7 +115,14 @@ class ItemUpdateRequest(BaseModel):
     item: ItemUpdate
 
 
+class OptionUpdateRequest(BaseModel):
+    option_id: int
+    option: OptionUpdate
+
+
 class UpdateSchema(BaseModel):
     type: Literal['updateForm', 'createItem',
-                  'moveItem', 'deleteItem', 'updateItem']
-    request: Union[FormUpdate, ItemCreate, ItemMove, int, ItemUpdateRequest]
+                  'moveItem', 'deleteItem', 'updateItem', 'createOption',
+                  'deleteOption', 'updateOption']
+    request: Union[FormUpdate, ItemCreate, ItemMove, int,
+                   ItemUpdateRequest, OptionCreate, int, OptionUpdateRequest]

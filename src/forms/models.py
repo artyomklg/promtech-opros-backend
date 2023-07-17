@@ -19,7 +19,7 @@ class OptionModel(Base):
         'item.id', ondelete="CASCADE"), nullable=False)
 
     item: Mapped['ItemModel'] = relationship('ItemModel',
-                                             uselist=False, back_populates='options', default=[])
+                                             uselist=False, back_populates='options')
 
 
 class ItemModel(Base):
@@ -37,7 +37,7 @@ class ItemModel(Base):
     form: Mapped['FormModel'] = relationship('FormModel',
                                              uselist=False, back_populates='items')
     options: Mapped[List[OptionModel]] = relationship('OptionModel',
-                                                      uselist=True, back_populates='item', default=[])
+                                                      uselist=True, back_populates='item')
 
 
 class FormModel(Base):
@@ -57,7 +57,7 @@ class FormModel(Base):
         'user.id', ondelete="SET NULL"), nullable=False)
 
     items: Mapped[List[ItemModel]] = relationship('ItemModel',
-                                                  uselist=True, back_populates='form', default=[])
+                                                  uselist=True, back_populates='form')
 
 
 # class Question(Base):
