@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import OptionModel, ItemModel, FormModel
 from .dao import OptionDAO, ItemDAO, FormDAO
-from .schemas import (FormCreate, FormUpdate, ItemCreate, ItemMove,
+from .schemas import (FormCreate, FormUpdate, ItemCreate, ItemDelete, ItemMove,
                       ItemUpdateRequest, OptionCreate, OptionUpdateRequest,
                       UpdateSchema, UpdateFormRequest, CreateItemRequest,
                       MoveItemRequest, DeleteItemRequest, UpdateItemRequest,
@@ -155,16 +155,21 @@ class FormService:
                 return None
 
     @classmethod
-    async def _update_form(cls, session: AsyncSession, schema: FormUpdate, form_id: int):
+    async def _update_form(cls, session: AsyncSession, schema: FormUpdate, form_id: int) -> None:
         await FormDAO.update(session, FormModel.id == form_id, obj_in=schema)
 
     @classmethod
-    async def _create_item(cls, session: AsyncSession, schema: ItemCreate):
-        # !Добавить сдвиг элементов, если элемент создан не в самом низу
+    async def _create_item(cls, session: AsyncSession, schema: ItemCreate) -> None:
+        items = await ItemDAO.find_all(session, ItemModel.form_id == schema.form_id, ItemModel.item_order >= schema.item_order)
+        update_list = [{'id': item.id, 'item_order': item.item_order + 1}
+                       for item in items]
+        if update_list != []:
+            await ItemDAO.update_bulk(session, update_list)
+
         await ItemDAO.add(session, obj_in=schema)
 
     @classmethod
-    async def _move_item(cls, session: AsyncSession, schema: ItemMove, form_id: int):
+    async def _move_item(cls, session: AsyncSession, schema: ItemMove, form_id: int) -> None:
         original_item = await ItemDAO.find_one_or_none(session, item_order=schema.original_location, form_id=form_id)
         if not original_item:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -182,23 +187,32 @@ class FormService:
         await ItemDAO.update_bulk(session, update_list)
 
     @classmethod
-    async def _delete_item(cls, session: AsyncSession, schema: int):
-        # !Добавить сдвиг остальных элементов
-        items_count = await ItemDAO.count
-        await ItemDAO.delete(session, ItemModel.id == schema)
+    async def _delete_item(cls, session: AsyncSession, schema: ItemDelete) -> None:
+        current_item = await ItemDAO.find_one_or_none(session, id=schema.id, item_order=schema.location)
+        if not current_item:
+            HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                          detail='Wrong data')
+
+        items = await ItemDAO.find_all(session, ItemModel.form_id == current_item.form_id, ItemModel.item_order > current_item.item_order)
+        update_list = [{'id': item.id, 'item_order': item.item_order - 1}
+                       for item in items]
+        if update_list != []:
+            await ItemDAO.update_bulk(session, update_list)
+
+        await ItemDAO.delete(session, ItemModel.id == schema.id)
 
     @classmethod
-    async def _update_item(cls, session: AsyncSession, schema: ItemUpdateRequest):
+    async def _update_item(cls, session: AsyncSession, schema: ItemUpdateRequest) -> None:
         await ItemDAO.update(session, ItemModel.id == schema.item_id, obj_in=schema.item)
 
     @classmethod
-    async def _create_option(cls, session: AsyncSession, schema: OptionCreate):
+    async def _create_option(cls, session: AsyncSession, schema: OptionCreate) -> None:
         await OptionDAO.add(session, obj_in=schema)
 
     @classmethod
-    async def _delete_option(cls, session: AsyncSession, schema: int):
+    async def _delete_option(cls, session: AsyncSession, schema: int) -> None:
         await OptionDAO.delete(session, OptionModel.id == schema)
 
     @classmethod
-    async def _update_option(cls, session: AsyncSession, schema: OptionUpdateRequest):
+    async def _update_option(cls, session: AsyncSession, schema: OptionUpdateRequest) -> None:
         await OptionDAO.update(session, OptionModel.id == schema.option_id, obj_in=schema.option)

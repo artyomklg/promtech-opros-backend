@@ -35,7 +35,7 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-    item_order: int
+    item_order: int = 1
     form_id: int
 
 
@@ -126,6 +126,9 @@ class OptionUpdateRequest(BaseModel):
 #                   'deleteOption', 'updateOption']
 #     request: Union[FormUpdate, ItemCreate, ItemMove, int,
 #                    ItemUpdateRequest, OptionCreate, int, OptionUpdateRequest]
+class ItemDelete(BaseModel):
+    id: int
+    location: int
 
 
 class UpdateFormRequest(BaseModel):
@@ -141,7 +144,7 @@ class MoveItemRequest(BaseModel):
 
 
 class DeleteItemRequest(BaseModel):
-    deleteItemLocation: int
+    deleteItem: ItemDelete
 
 
 class UpdateItemRequest(BaseModel):
