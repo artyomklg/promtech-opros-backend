@@ -2,21 +2,21 @@ version: "3.8"
 name: docker_promtech_opros_backend
 
 services:
-  fastapi:
-    image: fastapi_promtech
-    build:
-      context: .
-    container_name: fastapi_promtech
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-      - redis
-    command: ["/app/docker/app.sh"]
-    # networks:
-    #   - promtech
-    ports:
-      - 8000:8000
+  # fastapi:
+  #   image: fastapi_promtech
+  #   build:
+  #     context: .
+  #   container_name: fastapi_promtech
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   command: ["/app/docker/app.sh"]
+  #   networks:
+  #     - promtech
+  #   ports:
+  #     - 8000:8000
 
   postgres:
     image: postgres:15
@@ -27,8 +27,8 @@ services:
       - .env
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    # networks:
-    #   - promtech
+    networks:
+      - promtech
     # restart: unless-stopped
 
   pgadmin:
@@ -43,8 +43,8 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=password
     volumes:
       - pgadmin:/var/lib/pgadmin
-    # networks:
-    #   - promtech
+    networks:
+      - promtech
 
   redis:
     image: redis:7
@@ -54,7 +54,7 @@ volumes:
   postgres-data:
   pgadmin:
 
-# networks:
-#   promtech:
-#     name: promtech
-#     driver: bridge
+networks:
+  promtech:
+    name: promtech
+    driver: bridge
