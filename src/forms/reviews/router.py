@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from ..database import get_async_session, AsyncSession
-from ..users.schemas import User
-from ..users.dependencies import get_current_user, get_current_superuser
+from ...database import get_async_session, AsyncSession
+from ...users.schemas import User
+from ...users.dependencies import get_current_user, get_current_superuser
 from .schemas import Review
 
 reviews_router: APIRouter = APIRouter(prefix='/forms', tags=["reviews"])
