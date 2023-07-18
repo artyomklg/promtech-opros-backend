@@ -121,7 +121,6 @@ class UserService:
                     hashed_password=get_password_hash(user.password))
             )
             await session.commit()
-        print(db_user.__dict__)
 
         return db_user
 

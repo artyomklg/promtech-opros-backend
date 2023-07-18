@@ -55,13 +55,12 @@ async def get_form(
     return await FormService.get_form(id)
 
 
-@forms_router.post('/{id}:batchUpdate')  # ! in progress
+@forms_router.put('/{id}')  # ! in progress
 async def update_form(
     id: int,
-    includeFormInResponse: bool,
-    update_schema: List[UpdateSchema],
+    update_schema: UpdateSchema,
     user: User = Depends(get_current_superuser)
-) -> Form:
+) -> Optional[Form]:
     form = await FormService.get_form(id, without_items=True)
     if user.id != form.creator_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)

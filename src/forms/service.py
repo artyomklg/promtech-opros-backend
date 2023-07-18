@@ -6,8 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import OptionModel, ItemModel, FormModel
 from .dao import OptionDAO, ItemDAO, FormDAO
-from .schemas import (FormCreate, FormUpdate, ItemCreate,
-                      ItemMove, ItemUpdateRequest, OptionCreate, OptionUpdateRequest, UpdateSchema)
+from .schemas import (FormCreate, FormUpdate, ItemCreate, ItemMove,
+                      ItemUpdateRequest, OptionCreate, OptionUpdateRequest,
+                      UpdateSchema, UpdateFormRequest, CreateItemRequest,
+                      MoveItemRequest, DeleteItemRequest, UpdateItemRequest,
+                      CreateOptionRequest, DeleteOptionRequest, UpdateOptionRequest)
 from ..database import async_session_maker
 
 
@@ -120,29 +123,32 @@ class FormService:
         return form
 
     @classmethod
-    async def update_form_by_schema(cls, update_schemas: List[UpdateSchema], form_id: int, includeFormInResponse: bool) -> Optional[FormModel]:
+    async def update_form_by_schema(cls, update_schema: UpdateSchema, form_id: int) -> Optional[FormModel]:
         async with async_session_maker() as session:
-            for update_schema in update_schemas:
-                match update_schema.type:
-                    case 'updateForm':
-                        pass
-                    case 'createItem':
-                        pass
-                    case 'moveItem':
-                        pass
-                    case 'deleteItem':
-                        pass
-                    case 'updateItem':
-                        pass
-                    case 'createOption':
-                        pass
-                    case 'deleteOption':
-                        pass
-                    case 'updateOption':
-                        pass
+            for request in update_schema.requests:
+                # print(type(request))
+                # print(request)
+                # print()
+                if isinstance(request, UpdateFormRequest):
+                    await cls._update_form(session, request.updateForm, form_id)
+                elif isinstance(request, CreateItemRequest):
+                    await cls._create_item(session, request.createItem)
+                elif isinstance(request, MoveItemRequest):
+                    await cls._move_item(session, request.moveItem, form_id)
+                elif isinstance(request, DeleteItemRequest):
+                    await cls._delete_item(session, request.deleteItem)
+                elif isinstance(request, UpdateItemRequest):
+                    await cls._update_item(session, request.updateItem)
+                elif isinstance(request, CreateOptionRequest):
+                    await cls._create_option(session, request.createOption)
+                elif isinstance(request, DeleteOptionRequest):
+                    await cls._delete_option(session, request.deleteOption)
+                elif isinstance(request, UpdateOptionRequest):
+                    await cls._update_option(session, request.updateOption)
+
             await session.commit()
 
-            if includeFormInResponse:
+            if update_schema.includeFormInResponse:
                 form_out = await FormDAO.find_form(session, form_id)
                 return form_out
             else:
@@ -150,21 +156,35 @@ class FormService:
 
     @classmethod
     async def _update_form(cls, session: AsyncSession, schema: FormUpdate, form_id: int):
-        await FormDAO.update(session, FormModel.id == id, obj_in=schema)
+        await FormDAO.update(session, FormModel.id == form_id, obj_in=schema)
 
     @classmethod
     async def _create_item(cls, session: AsyncSession, schema: ItemCreate):
-        # !Добавить сдвиг элементов, если элемент создан не в самомм низу
-        await ItemDAO.add(session, obj_in=ItemCreate)
+        # !Добавить сдвиг элементов, если элемент создан не в самом низу
+        await ItemDAO.add(session, obj_in=schema)
 
     @classmethod
     async def _move_item(cls, session: AsyncSession, schema: ItemMove, form_id: int):
-        # !Написать логику и скопипастить вниз и вверх
-        ...
+        original_item = await ItemDAO.find_one_or_none(session, item_order=schema.original_location, form_id=form_id)
+        if not original_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f'item with location={schema.original_location} in form with id={form_id} not found')
+        if schema.new_location < schema.original_location:
+            items = await ItemDAO.find_all(session, ItemModel.item_order >= schema.new_location, ItemModel.item_order < schema.original_location, form_id=form_id)
+            update_list = [
+                {'id': item.id, 'item_order': item.item_order + 1} for item in items]
+        elif schema.new_location > schema.original_location:
+            items = await ItemDAO.find_all(session, ItemModel.item_order > schema.original_location, ItemModel.item_order <= schema.new_location, form_id=form_id)
+            update_list = [
+                {'id': item.id, 'item_order': item.item_order - 1} for item in items]
+        update_list.append(
+            {'id': original_item.id, 'item_order': schema.new_location})
+        await ItemDAO.update_bulk(session, update_list)
 
     @classmethod
     async def _delete_item(cls, session: AsyncSession, schema: int):
         # !Добавить сдвиг остальных элементов
+        items_count = await ItemDAO.count
         await ItemDAO.delete(session, ItemModel.id == schema)
 
     @classmethod

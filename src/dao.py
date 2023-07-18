@@ -4,6 +4,7 @@ from sqlalchemy import delete, insert, select, update
 from sqlalchemy.sql import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects import postgresql
 from pydantic import BaseModel
 
 from .database import async_session_maker, Base
@@ -99,9 +100,9 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     @classmethod
     async def add_bulk(cls, session: AsyncSession, *data):  # mappings -> scalars
         try:
-            stmt = insert(cls.model).values(*data).returning(cls.model.id)
+            stmt = insert(cls.model).values(*data).returning(cls.model)
             result = await session.execute(stmt)
-            return result.scalars().first()
+            return result.scalars().all()
         except (SQLAlchemyError, Exception) as e:
             if isinstance(e, SQLAlchemyError):
                 msg = "Database Exc"
@@ -113,7 +114,22 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return None
 
     @classmethod
-    async def count(cls, session: AsyncSession,):  # не тестил, но чисто теоретически должно работать
-        stmt = select(func.count()).select_from(cls.model)
+    async def update_bulk(cls, session: AsyncSession, data: List[Dict[str, Any]]):
+        try:
+            stmt = update(cls.model)
+            await session.execute(update(cls.model), data)
+        except (SQLAlchemyError, Exception) as e:
+            if isinstance(e, SQLAlchemyError):
+                msg = "Database Exc"
+            elif isinstance(e, Exception):
+                msg = "Unknown Exc"
+            msg += ": Cannot bulk update data into table"
+            print(msg)
+            # logger.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
+            return None
+
+    @classmethod
+    async def count(cls, session: AsyncSession, *filter, **filter_by):  # не тестил, но чисто теоретически должно работать
+        stmt = select(func.count()).select_from(cls.model).filter(*filter).filter_by(**filter_by)
         result = await session.execute(stmt)
         return result.scalar()

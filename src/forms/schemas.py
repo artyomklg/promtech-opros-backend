@@ -120,9 +120,57 @@ class OptionUpdateRequest(BaseModel):
     option: OptionUpdate
 
 
+# class UpdateSchema(BaseModel):
+#     type: Literal['updateForm', 'createItem',
+#                   'moveItem', 'deleteItem', 'updateItem', 'createOption',
+#                   'deleteOption', 'updateOption']
+#     request: Union[FormUpdate, ItemCreate, ItemMove, int,
+#                    ItemUpdateRequest, OptionCreate, int, OptionUpdateRequest]
+
+
+class UpdateFormRequest(BaseModel):
+    updateForm: FormUpdate
+
+
+class CreateItemRequest(BaseModel):
+    createItem: ItemCreate
+
+
+class MoveItemRequest(BaseModel):
+    moveItem: ItemMove
+
+
+class DeleteItemRequest(BaseModel):
+    deleteItemLocation: int
+
+
+class UpdateItemRequest(BaseModel):
+    updateItem: ItemUpdateRequest
+
+
+class CreateOptionRequest(BaseModel):
+    createOption: OptionCreate
+
+
+class DeleteOptionRequest(BaseModel):
+    deleteOptionId: int
+
+
+class UpdateOptionRequest(BaseModel):
+    updateOption: OptionUpdateRequest
+
+
 class UpdateSchema(BaseModel):
-    type: Literal['updateForm', 'createItem',
-                  'moveItem', 'deleteItem', 'updateItem', 'createOption',
-                  'deleteOption', 'updateOption']
-    request: Union[FormUpdate, ItemCreate, ItemMove, int,
-                   ItemUpdateRequest, OptionCreate, int, OptionUpdateRequest]
+    includeFormInResponse: bool
+    requests: List[
+        Union[
+            UpdateFormRequest,
+            CreateItemRequest,
+            MoveItemRequest,
+            DeleteItemRequest,
+            UpdateItemRequest,
+            CreateOptionRequest,
+            DeleteOptionRequest,
+            UpdateOptionRequest
+        ]
+    ]
