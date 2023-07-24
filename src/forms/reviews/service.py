@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import joinedload
 
-from .models import Review as ReviewModel, Answer as AnswerModel
+from .models import ReviewModel, AnswerModel
 from .schemas import Review, Answer, TextPrompt, ChoisePrompt
 
 
