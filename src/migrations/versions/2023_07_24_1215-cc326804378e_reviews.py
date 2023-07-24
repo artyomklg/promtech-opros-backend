@@ -31,10 +31,10 @@ def upgrade() -> None:
     op.create_table('answer',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('item_id', sa.Integer(), nullable=False),
-    sa.Column('response_id', sa.Integer(), nullable=False),
+    sa.Column('review_id', sa.Integer(), nullable=False),
     sa.Column('promt', postgresql.JSON(astext_type=sa.Text()), nullable=False),
     sa.ForeignKeyConstraint(['item_id'], ['item.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['response_id'], ['review.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['review_id'], ['review.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

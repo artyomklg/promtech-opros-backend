@@ -32,7 +32,7 @@ class AnswerModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
     item_id: Mapped[int] = mapped_column(
         sa.ForeignKey('item.id', ondelete='CASCADE'))
-    response_id: Mapped[int] = mapped_column(
+    review_id: Mapped[int] = mapped_column(
         sa.ForeignKey('review.id', ondelete='CASCADE'))
     promt: Mapped[dict[str, Any]] = mapped_column(JSON)
 
