@@ -16,10 +16,9 @@ class OptionModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[Optional[str]]
     item_id: Mapped[int] = mapped_column(sa.ForeignKey(
-        'item.id', ondelete="CASCADE"), nullable=False)
+        'item.id', ondelete='CASCADE'), nullable=False)
 
-    item: Mapped['ItemModel'] = relationship('ItemModel',
-                                             uselist=False, back_populates='options')
+    item: Mapped['ItemModel'] = relationship(uselist=False, back_populates='options')
 
 
 class ItemModel(Base):
@@ -32,12 +31,10 @@ class ItemModel(Base):
     item_order: Mapped[int]
     required: Mapped[bool] = mapped_column(default=True)
     form_id: Mapped[int] = mapped_column(sa.ForeignKey(
-        'form.id', ondelete="CASCADE"), nullable=False)
+        'form.id', ondelete='CASCADE'), nullable=False)
 
-    form: Mapped['FormModel'] = relationship('FormModel',
-                                             uselist=False, back_populates='items')
-    options: Mapped[List[OptionModel]] = relationship('OptionModel',
-                                                      uselist=True, back_populates='item')
+    form: Mapped['FormModel'] = relationship(uselist=False, back_populates='items')
+    options: Mapped[List[OptionModel]] = relationship(uselist=True, back_populates='item')
 
 
 class FormModel(Base):
@@ -54,10 +51,9 @@ class FormModel(Base):
                                                  server_default=func.now())
     link: Mapped[Optional[str]]
     creator_id: Mapped[uuid.UUID] = mapped_column(UUID, sa.ForeignKey(
-        'user.id', ondelete="SET NULL"), nullable=False)
+        'user.id', ondelete='SET NULL'), nullable=False)
 
-    items: Mapped[List[ItemModel]] = relationship('ItemModel',
-                                                  uselist=True, back_populates='form')
+    items: Mapped[List[ItemModel]] = relationship(uselist=True, back_populates='form')
 
 
 # class Question(Base):

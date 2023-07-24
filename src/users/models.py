@@ -31,4 +31,4 @@ class RefreshSessionModel(Base):
     created_at: Mapped[datetime] = mapped_column(sa.TIMESTAMP(timezone=True),
                                                  server_default=func.now())
     user_id: Mapped[uuid.UUID] = mapped_column(UUID, sa.ForeignKey(
-        "user.id", ondelete="CASCADE"))
+        'user.id', ondelete='CASCADE'))
