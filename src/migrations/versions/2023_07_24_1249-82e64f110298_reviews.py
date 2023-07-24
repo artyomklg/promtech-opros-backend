@@ -1,8 +1,8 @@
 """reviews
 
-Revision ID: cc326804378e
+Revision ID: 82e64f110298
 Revises: 6f4a9c76a149
-Create Date: 2023-07-24 12:15:32.573677
+Create Date: 2023-07-24 12:49:59.334732
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'cc326804378e'
+revision = '82e64f110298'
 down_revision = '6f4a9c76a149'
 branch_labels = None
 depends_on = None
@@ -22,7 +22,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('form_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('review_time', sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column('review_time', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('is_ready', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['form_id'], ['form.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
@@ -32,7 +33,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('item_id', sa.Integer(), nullable=False),
     sa.Column('review_id', sa.Integer(), nullable=False),
-    sa.Column('promt', postgresql.JSON(astext_type=sa.Text()), nullable=False),
+    sa.Column('promt', postgresql.JSON(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['item_id'], ['item.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['review_id'], ['review.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
