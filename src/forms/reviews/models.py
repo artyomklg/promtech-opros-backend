@@ -1,39 +1,40 @@
+from typing import Any
 import uuid
 from datetime import datetime
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB
 
 from ...database import Base
-from ...forms import models as form_m
-from ...users import models as user_m
+# from ...forms import models as form_m
+# from ...users import models as user_m
 
 
-class Review(Base):
-    id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    form_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('form.id', ondelete="CASCADE"), nullable=False)
-    user_id: uuid.UUID = sa.Column(
-        UUID(as_uuid=True), sa.ForeignKey('user.id', ondelete="CASCADE"))
-    review_time: datetime = sa.Column(
-        sa.DateTime(timezone=True), server_default=func.now())
+class ReviewModel(Base):
+    __tablename__ = 'review'
 
-    user = relationship('user_m.User',
-                        uselist=False)
-    answers = relationship('Answer', uselist=True, back_populates='review')
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    form_id: Mapped[int] = mapped_column(sa.ForeignKey(
+        'form.id', ondelete='CASCADE'), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID, sa.ForeignKey(
+        'user.id', ondelete='SET NULL'), nullable=False)
+    review_time: Mapped[datetime] = mapped_column(sa.TIMESTAMP(timezone=True))
+
+    answers: Mapped['AnswerModel'] = relationship(
+        uselist=True, back_populates='review')
 
 
-class Answer(Base):
-    id: int = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    item_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('item.id', ondelete="CASCADE"))
-    response_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('review.id', ondelete="CASCADE"))
-    promt: dict = sa.Column(JSONB)
+class AnswerModel(Base):
+    __tablename__ = 'answer'
 
-    item = relationship('form_m.Item', uselist=False)
-    review = relationship('Review', uselist=False,
-                          back_populates='answers')
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False)
+    item_id: Mapped[int] = mapped_column(
+        sa.ForeignKey('item.id', ondelete='CASCADE'))
+    response_id: Mapped[int] = mapped_column(
+        sa.ForeignKey('review.id', ondelete='CASCADE'))
+    promt: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+    review: Mapped[ReviewModel] = relationship(
+        uselist=False, back_populates='answers')

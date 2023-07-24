@@ -13,8 +13,7 @@ from src.config import settings
 from src.database import Base
 from src.users.models import UserModel, RefreshSessionModel
 from src.forms.models import FormModel, ItemModel, OptionModel
-# from src.forms.models import Option, Item, Form
-# from src.reviews.models import Review, Answer
+from src.forms.reviews.models import ReviewModel, AnswerModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
