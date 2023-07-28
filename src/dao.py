@@ -81,7 +81,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         *where,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]],
         # id: Any
-    ) -> Optional[ModelType]:  # Вроде работает, сильно не тестил
+    ) -> Optional[ModelType]:
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
@@ -98,10 +98,12 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return result.scalars().one()
 
     @classmethod
-    async def add_bulk(cls, session: AsyncSession, *data):  # mappings -> scalars
+    async def add_bulk(cls, session: AsyncSession, data: List[Dict[str, Any]]):
         try:
-            stmt = insert(cls.model).values(*data).returning(cls.model)
-            result = await session.execute(stmt)
+            result = await session.execute(
+                insert(cls.model).returning(cls.model),
+                data
+            )
             return result.scalars().all()
         except (SQLAlchemyError, Exception) as e:
             if isinstance(e, SQLAlchemyError):
@@ -129,7 +131,9 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return None
 
     @classmethod
-    async def count(cls, session: AsyncSession, *filter, **filter_by):  # не тестил, но чисто теоретически должно работать
-        stmt = select(func.count()).select_from(cls.model).filter(*filter).filter_by(**filter_by)
+    # не тестил, но чисто теоретически должно работать
+    async def count(cls, session: AsyncSession, *filter, **filter_by):
+        stmt = select(func.count()).select_from(
+            cls.model).filter(*filter).filter_by(**filter_by)
         result = await session.execute(stmt)
         return result.scalar()
