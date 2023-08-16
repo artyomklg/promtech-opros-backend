@@ -1,9 +1,8 @@
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy import NullPool
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
 from .config import settings
 

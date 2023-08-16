@@ -1,20 +1,11 @@
-from typing import Optional
-
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from .models import ReviewModel, AnswerModel
-from .schemas import (
-    AnswerCreate, AnswerUpdate,
-    ReviewCreate, ReviewUpdate
-)
 from ...dao import BaseDAO
+from .models import AnswerModel, ReviewModel
+from .schemas import AnswerCreate, AnswerUpdate, ReviewCreate, ReviewUpdate
 
 
-class ReviewDAO(BaseDAO[ReviewModel, AnswerCreate, AnswerUpdate]):
+class ReviewDAO(BaseDAO[ReviewModel, ReviewCreate, ReviewUpdate]):
     model = ReviewModel
 
 
-class AnswerDao(BaseDAO[AnswerModel, ReviewCreate, ReviewUpdate]):
+class AnswerDao(BaseDAO[AnswerModel, AnswerCreate, AnswerUpdate]):
     model = AnswerModel

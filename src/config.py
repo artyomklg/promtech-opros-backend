@@ -4,10 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = 'local_forms'
+    app_name: str = "local_forms"
 
     MODE: Literal["DEV", "TEST", "PROD"]
-    LOG_LEVEL: str
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
     DB_USER: str
     DB_PASS: str
@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     @property
     def TEST_DATABASE_URL(self):
         return f"postgresql+asyncpg://{self.DB_USER_TEST}:{self.DB_PASS_TEST}@{self.DB_HOST_TEST}:{self.DB_PORT_TEST}/{self.DB_NAME_TEST}"
+
     # SMTP_HOST: str
     # SMTP_PORT: int
     # SMTP_USER: str
@@ -49,5 +50,5 @@ class Settings(BaseSettings):
 settings: Settings = Settings()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(settings.model_dump())

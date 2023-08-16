@@ -1,16 +1,17 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from .service import FormService
-from .schemas import Form, FormWithoutItems, UpdateSchema
-from ..users.schemas import User
 from ..users.dependencies import get_current_superuser
 from ..users.models import UserModel
+from ..users.schemas import User
+from .schemas import Form, FormWithoutItems, UpdateSchema
+from .service import FormService
 
-forms_router: APIRouter = APIRouter(prefix='/forms', tags=["forms"])
+forms_router: APIRouter = APIRouter(prefix="/forms", tags=["forms"])
 
 
-@forms_router.post('/')
+@forms_router.post("/")
 async def create_form(
     id: int | None = None,
     user: UserModel = Depends(get_current_superuser),
@@ -23,22 +24,23 @@ async def create_form(
         return form_out
 
 
-@forms_router.get('/')
+@forms_router.get("/")
 async def get_list_forms(
     templates: bool,
     my: bool,
     offset: Optional[str] = 0,
     limit: Optional[str] = 100,
-    user: UserModel = Depends(get_current_superuser)
+    user: UserModel = Depends(get_current_superuser),
 ) -> List[FormWithoutItems]:
-    forms = await FormService.get_list_forms(templates, my, user.id, offset=offset, limit=limit)
+    forms = await FormService.get_list_forms(
+        templates, my, user.id, offset=offset, limit=limit
+    )
     return forms
 
 
-@forms_router.post('/{id}')
+@forms_router.post("/{id}")
 async def form_to_review(
-    id: int,
-    user: UserModel = Depends(get_current_superuser)
+    id: int, user: UserModel = Depends(get_current_superuser)
 ) -> Form:
     form = await FormService.get_form(id)
     if form.creator_id != user.id:
@@ -47,19 +49,14 @@ async def form_to_review(
     return form_out
 
 
-@forms_router.get('/{id}')
-async def get_form(
-    id: int,
-    user: UserModel = Depends(get_current_superuser)
-) -> Form:
+@forms_router.get("/{id}")
+async def get_form(id: int, user: UserModel = Depends(get_current_superuser)) -> Form:
     return await FormService.get_form(id)
 
 
-@forms_router.put('/{id}')  # ! in progress
+@forms_router.put("/{id}")  # ! in progress
 async def update_form(
-    id: int,
-    update_schema: UpdateSchema,
-    user: User = Depends(get_current_superuser)
+    id: int, update_schema: UpdateSchema, user: User = Depends(get_current_superuser)
 ) -> Optional[Form]:
     form = await FormService.get_form(id, without_items=True)
     if user.id != form.creator_id:

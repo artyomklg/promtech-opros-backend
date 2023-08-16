@@ -1,10 +1,10 @@
-from typing import List, Literal, Optional, Union
 import uuid
 from datetime import datetime
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .enums import ItemType, Color, Organization
+from .enums import Color, ItemType, Organization
 
 
 class OptionBase(BaseModel):
@@ -174,6 +174,6 @@ class UpdateSchema(BaseModel):
             UpdateItemRequest,
             CreateOptionRequest,
             DeleteOptionRequest,
-            UpdateOptionRequest
+            UpdateOptionRequest,
         ]
     ]

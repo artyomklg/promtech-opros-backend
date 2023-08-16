@@ -1,13 +1,14 @@
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 
+from pydantic import BaseModel
 from sqlalchemy import delete, insert, select, update
-from sqlalchemy.sql import func
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects import postgresql
-from pydantic import BaseModel
+from sqlalchemy.sql import func
 
-from .database import async_session_maker, Base
+from .database import Base
+
 # from .logger import logger
 
 
@@ -20,7 +21,9 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     model = None
 
     @classmethod
-    async def find_one_or_none(cls, session: AsyncSession, *filter, **filter_by) -> Optional[ModelType]:
+    async def find_one_or_none(
+        cls, session: AsyncSession, *filter, **filter_by
+    ) -> Optional[ModelType]:
         stmt = select(cls.model).filter(*filter).filter_by(**filter_by)
         result = await session.execute(stmt)
         return result.scalars().one_or_none()
@@ -32,7 +35,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         *filter,
         offset: int = 0,
         limit: int = 100,
-        **filter_by
+        **filter_by,
     ) -> List[ModelType]:
         stmt = (
             select(cls.model)
@@ -46,17 +49,14 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     @classmethod
     async def add(
-        cls,
-        session: AsyncSession,
-        obj_in: Union[CreateSchemaType, Dict[str, Any]]
+        cls, session: AsyncSession, obj_in: Union[CreateSchemaType, Dict[str, Any]]
     ) -> Optional[ModelType]:
         if isinstance(obj_in, dict):
             create_data = obj_in
         else:
             create_data = obj_in.model_dump(exclude_unset=True)
         try:
-            stmt = insert(cls.model).values(
-                **create_data).returning(cls.model)
+            stmt = insert(cls.model).values(**create_data).returning(cls.model)
             result = await session.execute(stmt)
             return result.scalars().first()
         except (SQLAlchemyError, Exception) as e:
@@ -66,7 +66,6 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 msg = "Unknown Exc: Cannot insert data into table"
 
             # logger.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
-            print(msg)
             return None
 
     @classmethod
@@ -80,7 +79,6 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
         *where,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]],
-        # id: Any
     ) -> Optional[ModelType]:
         if isinstance(obj_in, dict):
             update_data = obj_in
@@ -88,11 +86,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             update_data = obj_in.model_dump(exclude_unset=True)
 
         stmt = (
-            update(cls.model).
-            # where(cls.model.id == id).
-            where(*where).
-            values(**update_data).
-            returning(cls.model)
+            update(cls.model).where(*where).values(**update_data).returning(cls.model)
         )
         result = await session.execute(stmt)
         return result.scalars().one()
@@ -100,10 +94,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     @classmethod
     async def add_bulk(cls, session: AsyncSession, data: List[Dict[str, Any]]):
         try:
-            result = await session.execute(
-                insert(cls.model).returning(cls.model),
-                data
-            )
+            result = await session.execute(insert(cls.model).returning(cls.model), data)
             return result.scalars().all()
         except (SQLAlchemyError, Exception) as e:
             if isinstance(e, SQLAlchemyError):
@@ -126,14 +117,16 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             elif isinstance(e, Exception):
                 msg = "Unknown Exc"
             msg += ": Cannot bulk update data into table"
-            print(msg)
             # logger.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
             return None
 
     @classmethod
-    # не тестил, но чисто теоретически должно работать
     async def count(cls, session: AsyncSession, *filter, **filter_by):
-        stmt = select(func.count()).select_from(
-            cls.model).filter(*filter).filter_by(**filter_by)
+        stmt = (
+            select(func.count())
+            .select_from(cls.model)
+            .filter(*filter)
+            .filter_by(**filter_by)
+        )
         result = await session.execute(stmt)
         return result.scalar()

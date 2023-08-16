@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,7 +19,6 @@ class AnswerBase(BaseModel):
 
 class AnswerCreate(AnswerBase):
     item_id: int
-    review_id: int
 
 
 class AnswerUpdate(AnswerBase):
