@@ -37,7 +37,6 @@ services:
 
 volumes:
   postgres-data:
-  pgadmin:
 
 networks:
   promtech:
