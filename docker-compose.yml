@@ -22,7 +22,7 @@ services:
     image: postgres:15
     container_name: postgres_promtech
     ports:
-      - "5432:5432"
+      - "5433:5432"
     env_file:
       - .env-non-dev
     volumes:
@@ -30,20 +30,6 @@ services:
     networks:
       - promtech
     # restart: unless-stopped
-
-  pgadmin:
-    image: dpage/pgadmin4:6.15
-    container_name: pgadmin_promtech
-    depends_on:
-      - postgres
-    ports:
-      - "5555:80"
-    env_file:
-      - .env-non-dev
-    volumes:
-      - pgadmin:/var/lib/pgadmin
-    networks:
-      - promtech
 
   redis:
     image: redis:7
