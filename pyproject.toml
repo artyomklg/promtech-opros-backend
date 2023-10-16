@@ -19,6 +19,7 @@ sqladmin = "^0.14.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
+ruff = "^0.0.287"
 
 [build-system]
 requires = ["poetry-core"]
